@@ -24,7 +24,6 @@ const chkDate = (req, res, next) => {
     NEW_DAY = true;
     console.log("setting day");
   }
-  flag = true;
   next();
 };
 
@@ -48,7 +47,8 @@ const scrap = async (req, res) => {
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
 
-  if ((TODAY_DATA.length === 0 || NEW_DAY === true) && flag === true) {
+  if ((TODAY_DATA.length === 0 || NEW_DAY === true) && flag === false) {
+    console.log("flag true");
     // 데이터가 없거나 날짜가 바뀌면 스크랩
     try {
       let lists = [];
@@ -56,7 +56,7 @@ const scrap = async (req, res) => {
       const kosdaq = await init("KOSDAQ");
       lists = kospi.concat(kosdaq);
       TODAY_DATA = lists;
-      flag = false;
+      flag = true;
       console.log("end sending");
       res.json(TODAY_DATA);
     } catch (err) {
@@ -64,6 +64,7 @@ const scrap = async (req, res) => {
     }
   } else {
     flag = false;
+    console.log("flag false");
     console.log("end sending");
     res.json(TODAY_DATA);
   }
