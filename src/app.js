@@ -12,22 +12,20 @@ let NEW_DAY = false;
 let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
 
 const chkDate = (req, res, next) => {
-  if (!flag) {
-    console.log("check day");
-    NEW_DAY = false;
-    const d = new Date();
-    const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
-    const curr_time = `${d.getHours()}${d.getMinutes()}`;
-    const time = "1600";
+  console.log("check day");
+  NEW_DAY = false;
+  const d = new Date();
+  const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+  const curr_time = `${d.getHours()}${d.getMinutes()}`;
+  const time = "1600";
 
-    if (!(date === DATE) && Number(curr_time) > Number(time)) {
-      DATE = date;
-      NEW_DAY = true;
-      console.log("setting day");
-    }
-    flag = true;
-    next();
+  if (!(date === DATE) && Number(curr_time) > Number(time)) {
+    DATE = date;
+    NEW_DAY = true;
+    console.log("setting day");
   }
+  flag = true;
+  next();
 };
 
 const corsOptions = {
@@ -50,7 +48,7 @@ const scrap = async (req, res) => {
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
 
-  if (TODAY_DATA.length === 0 || NEW_DAY === true) {
+  if ((TODAY_DATA.length === 0 || NEW_DAY === true) && flag === true) {
     // 데이터가 없거나 날짜가 바뀌면 스크랩
     try {
       let lists = [];
