@@ -34,10 +34,10 @@ export const init = async (exchange) => {
     } else if (exchange === "KOSDAQ") {
       num = 1;
     }
-    console.log("start avg price");
+    console.log(`start ${exchange}avg price`);
     avgPrice = await getNaver(driver, num);
     console.log("end avg price");
-    console.log("start get list");
+    console.log(`start ${exchange}get list`);
     lists = await getDaum(driver, exchange, avgPrice);
     console.log("end get list");
   } catch (err) {

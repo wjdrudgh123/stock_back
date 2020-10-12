@@ -46,7 +46,9 @@ const scrap = async (req, res) => {
   // );
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
-
+  console.log("data len: " + TODAY_DATA.length);
+  console.log("new_day: " + NEW_DAY);
+  console.log("flag: " + flag);
   if ((TODAY_DATA.length === 0 || NEW_DAY === true) && flag === false) {
     console.log("flag true");
     flag = true;
