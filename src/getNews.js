@@ -5,6 +5,7 @@ import path from "path";
 //http://finance.daum.net/
 
 export const getNews = async (url) => {
+  console.log("start getNews");
   let news = [];
 
   const driverPath = path.join(__dirname, "../chromedriver");
@@ -69,5 +70,6 @@ export const getNews = async (url) => {
     }
   }
   await driver2.quit();
+  console.log("end getNews");
   return news;
 };

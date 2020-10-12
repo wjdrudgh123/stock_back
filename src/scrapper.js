@@ -82,6 +82,7 @@ const processScrap = async (companies, avgPrice) => {
       companyList.push(stockData);
     }
   }
+  console.log("end companyList");
   return companyList;
 };
 

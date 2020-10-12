@@ -9,21 +9,25 @@ const app = express();
 let TODAY_DATA = [];
 let DATE = "";
 let NEW_DAY = false;
+let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
 
 const chkDate = (req, res, next) => {
-  console.log("check day");
-  NEW_DAY = false;
-  const d = new Date();
-  const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
-  const curr_time = `${d.getHours()}${d.getMinutes()}`;
-  const time = "1600";
+  if (!flag) {
+    console.log("check day");
+    NEW_DAY = false;
+    const d = new Date();
+    const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+    const curr_time = `${d.getHours()}${d.getMinutes()}`;
+    const time = "1600";
 
-  if (!(date === DATE) && Number(curr_time) > Number(time)) {
-    DATE = date;
-    NEW_DAY = true;
-    console.log("setting day");
+    if (!(date === DATE) && Number(curr_time) > Number(time)) {
+      DATE = date;
+      NEW_DAY = true;
+      console.log("setting day");
+    }
+    flag = true;
+    next();
   }
-  next();
 };
 
 const corsOptions = {
@@ -54,15 +58,16 @@ const scrap = async (req, res) => {
       const kosdaq = await init("KOSDAQ");
       lists = kospi.concat(kosdaq);
       TODAY_DATA = lists;
-
-      res.json(TODAY_DATA);
+      flag = false;
       console.log("end sending");
+      res.json(TODAY_DATA);
     } catch (err) {
       console.log(err);
     }
   } else {
-    res.json(TODAY_DATA);
+    flag = false;
     console.log("end sending");
+    res.json(TODAY_DATA);
   }
 };
 app.use("/data", scrap);
