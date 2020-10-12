@@ -49,6 +49,7 @@ const scrap = async (req, res) => {
 
   if ((TODAY_DATA.length === 0 || NEW_DAY === true) && flag === false) {
     console.log("flag true");
+    flag = true;
     // 데이터가 없거나 날짜가 바뀌면 스크랩
     try {
       let lists = [];
@@ -56,7 +57,6 @@ const scrap = async (req, res) => {
       const kosdaq = await init("KOSDAQ");
       lists = kospi.concat(kosdaq);
       TODAY_DATA = lists;
-      flag = true;
       console.log("end sending");
       res.json(TODAY_DATA);
     } catch (err) {
