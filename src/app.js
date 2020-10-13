@@ -73,6 +73,11 @@ const scrap = async (req, res) => {
     if (TODAY_DATA.length !== 0) {
       console.log("change flag false");
       flag = false;
+    } else {
+      console.log("change flag false");
+      console.log("change Update true");
+      UPDATE = true;
+      flag = false;
     }
     console.log("end sending");
     res.json(TODAY_DATA);
