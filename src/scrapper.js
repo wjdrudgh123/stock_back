@@ -11,7 +11,6 @@ https://finance.naver.com/sise/sise_rise.nhn?sosok=1
 */
 
 export const init = async (exchange) => {
-  let avgPrice = 0;
   const driverPath = path.join(__dirname, "../chromedriver");
   const serviceBuilder = new ServiceBuilder(driverPath);
   const options = new chrome.Options();
@@ -29,7 +28,7 @@ export const init = async (exchange) => {
   let lists = [];
   try {
     console.log(`start ${exchange} get list`);
-    lists = await getDaum(driver, exchange, avgPrice);
+    lists = await getDaum(driver, exchange);
     console.log(`end ${exchange} get list`);
   } catch (err) {
     console.log(err);
@@ -39,18 +38,18 @@ export const init = async (exchange) => {
   }
 };
 
-const getDaum = async (driver, exchange, avgPrice) => {
+const getDaum = async (driver, exchange) => {
   await driver.get(
     `http://finance.daum.net/domestic/rise_stocks?market=${exchange}`
   );
   const companies = await driver.findElements(
     By.xpath("//*[@id='boxRiseStocks']/div[2]/div[1]/table/tbody/tr")
   );
-  const list = await processScrap(companies, avgPrice);
+  const list = await processScrap(companies);
   return list;
 };
 
-const processScrap = async (companies, avgPrice) => {
+const processScrap = async (companies) => {
   const companyList = [];
   for (let i = 0; i < companies.length; i++) {
     let stockData = {};

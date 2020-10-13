@@ -9,8 +9,11 @@
     "build": "npm run build:server",
     "prebuild": "rm -rf build",
     "build:server": "babel src --out-dir build",
-    "start": "node build/app.js",
-    "prestart": "npm run build"
+    "start": "pm2 start build/app.js --name 'stock'",
+    "prestart": "npm run build",
+    "pro:status": "pm2 list",
+    "pro:stop": "pm2 stop stock",
+    "pro:logs":"pm2 logs stock"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +25,7 @@
     "@babel/runtime": "^7.11.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "pm2": "^4.5.0",
     "selenium-webdriver": "^4.0.0-alpha.7"
   },
   "devDependencies": {
