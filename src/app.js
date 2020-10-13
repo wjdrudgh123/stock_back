@@ -21,10 +21,10 @@ const chkDate = (req, res, next) => {
   const thirdUpdateTime = "2000";
   const fourthUpdateTime = "2300";
   if (
-    (Number(curr_time) > Number(firstUpdateTime) ||
-      Number(curr_time) > Number(secondUpdateTime) ||
-      Number(curr_time) > Number(thirdUpdateTime) ||
-      Number(curr_time) > Number(fourthUpdateTime)) &&
+    Number(curr_time) > Number(firstUpdateTime) ||
+    Number(curr_time) > Number(secondUpdateTime) ||
+    Number(curr_time) > Number(thirdUpdateTime) ||
+    Number(curr_time) > Number(fourthUpdateTime) ||
     TODAY !== date
   ) {
     console.log("update&today change true");
