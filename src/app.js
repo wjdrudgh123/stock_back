@@ -7,23 +7,29 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 let TODAY_DATA = [];
-let DATE = "";
-let NEW_DAY = false;
+let UPDATE = false;
 let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
 
 const chkDate = (req, res, next) => {
-  console.log("check day");
-  NEW_DAY = false;
+  console.log("start check time");
+  UPDATE = false;
   const d = new Date();
   const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   const curr_time = `${d.getHours()}${d.getMinutes()}`;
-  const time = "1600";
-
-  if (!(date === DATE) && Number(curr_time) > Number(time)) {
-    DATE = date;
-    NEW_DAY = true;
-    console.log("setting day");
+  const firstUpdateTime = "1600";
+  const secondUpdateTime = "1800";
+  const thirdUpdateTime = "2000";
+  const fourthUpdateTime = "2300";
+  if (
+    Number(curr_time) > Number(firstUpdateTime) ||
+    Number(curr_time) > Number(secondUpdateTime) ||
+    Number(curr_time) > Number(thirdUpdateTime) ||
+    Number(curr_time) > Number(fourthUpdateTime)
+  ) {
+    UPDATE = true;
   }
+
+  console.log("end check time");
   next();
 };
 
@@ -46,11 +52,10 @@ const scrap = async (req, res) => {
   // );
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
-  console.log("data len: " + TODAY_DATA.length);
-  console.log("new_day: " + NEW_DAY);
+  console.log("new_day: " + UPDATE);
   console.log("flag: " + flag);
-  if ((TODAY_DATA.length === 0 || NEW_DAY === true) && flag === false) {
-    console.log("flag true");
+  if (UPDATE === true && flag === false) {
+    console.log("change flag true");
     flag = true;
     // 데이터가 없거나 날짜가 바뀌면 스크랩
     try {
@@ -65,8 +70,10 @@ const scrap = async (req, res) => {
       console.log(err);
     }
   } else {
-    flag = false;
-    console.log("flag false");
+    if (TODAY_DATA.length !== 0) {
+      console.log("change flag false");
+      flag = false;
+    }
     console.log("end sending");
     res.json(TODAY_DATA);
   }

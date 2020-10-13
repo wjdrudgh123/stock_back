@@ -1,7 +1,7 @@
 import { Builder, By } from "selenium-webdriver";
 import chrome, { ServiceBuilder } from "selenium-webdriver/chrome";
 import path from "path";
-import { getNews } from "./getNews";
+import { secondDriver } from "./secondDriver";
 
 /*
 http://finance.daum.net/domestic/rise_stocks?market=KOSPI
@@ -28,18 +28,9 @@ export const init = async (exchange) => {
     .build();
   let lists = [];
   try {
-    let num = 0;
-    if (exchange === "KOSPI") {
-      num = 0;
-    } else if (exchange === "KOSDAQ") {
-      num = 1;
-    }
-    console.log(`start ${exchange}avg price`);
-    avgPrice = await getNaver(driver, num);
-    console.log("end avg price");
-    console.log(`start ${exchange}get list`);
+    console.log(`start ${exchange} get list`);
     lists = await getDaum(driver, exchange, avgPrice);
-    console.log("end get list");
+    console.log(`end ${exchange} get list`);
   } catch (err) {
     console.log(err);
   } finally {
@@ -53,7 +44,7 @@ const getDaum = async (driver, exchange, avgPrice) => {
     `http://finance.daum.net/domestic/rise_stocks?market=${exchange}`
   );
   const companies = await driver.findElements(
-    By.xpath("//div[@class='box_contents']/div/table/tbody/tr")
+    By.xpath("//*[@id='boxRiseStocks']/div[2]/div[1]/table/tbody/tr")
   );
   const list = await processScrap(companies, avgPrice);
   return list;
@@ -62,20 +53,17 @@ const getDaum = async (driver, exchange, avgPrice) => {
 const processScrap = async (companies, avgPrice) => {
   const companyList = [];
   for (let i = 0; i < companies.length; i++) {
+    let stockData = {};
     const companyTd = await companies[i].findElements(By.xpath("./td"));
-    const tempRateFluctuation = await companyTd[4].getText();
-    const tempTradePrice = await companyTd[6].getText();
-    const rateFluctuation = tempRateFluctuation
-      .replace("+", "")
-      .replace("%", "");
-    const tradePrice = tempTradePrice.replace(/,/g, "");
-    if (Number(rateFluctuation) >= 14 && tradePrice >= avgPrice) {
-      const companyName = await companyTd[1].getText();
-      const links = await companyTd[1]
-        .findElement(By.xpath("./a"))
-        .getAttribute("href");
-      const news = await getNews(links);
-      const stockData = {
+
+    const companyName = await companyTd[1].getText();
+    const links = await companyTd[1]
+      .findElement(By.xpath("./a"))
+      .getAttribute("href");
+    const news = await secondDriver(links);
+
+    if (news) {
+      stockData = {
         companyName: companyName,
         news: news,
       };
@@ -87,7 +75,7 @@ const processScrap = async (companies, avgPrice) => {
 };
 
 // 거래대금 평균
-
+/*
 const getNaver = async (driver, exchange) => {
   await driver.get(
     `https://finance.naver.com/sise/sise_rise.nhn?sosok=${exchange}`
@@ -135,3 +123,4 @@ const getAvgPrice = async (driver) => {
   const retPrice = totalPrice / (totalNum - 2);
   return Math.ceil(retPrice);
 };
+*/
