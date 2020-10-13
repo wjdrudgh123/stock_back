@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 let TODAY_DATA = [];
+let TODAY = "";
 let UPDATE = false;
 let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
 
@@ -20,12 +21,14 @@ const chkDate = (req, res, next) => {
   const thirdUpdateTime = "2000";
   const fourthUpdateTime = "2300";
   if (
-    Number(curr_time) > Number(firstUpdateTime) ||
-    Number(curr_time) > Number(secondUpdateTime) ||
-    Number(curr_time) > Number(thirdUpdateTime) ||
-    Number(curr_time) > Number(fourthUpdateTime)
+    (Number(curr_time) > Number(firstUpdateTime) ||
+      Number(curr_time) > Number(secondUpdateTime) ||
+      Number(curr_time) > Number(thirdUpdateTime) ||
+      Number(curr_time) > Number(fourthUpdateTime)) &&
+    TODAY !== date
   ) {
-    console.log("update change true");
+    console.log("update&today change true");
+    TODAY = date;
     UPDATE = true;
   }
 
@@ -52,8 +55,10 @@ const scrap = async (req, res) => {
   // );
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
-  console.log("new_day: " + UPDATE);
+  console.log("today: " + TODAY);
+  console.log("update: " + UPDATE);
   console.log("flag: " + flag);
+
   if (UPDATE === true && flag === false) {
     console.log("change flag true");
     flag = true;
