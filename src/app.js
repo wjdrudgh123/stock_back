@@ -12,7 +12,6 @@ let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
 
 const chkDate = (req, res, next) => {
   console.log("start check time");
-  UPDATE = false;
   const d = new Date();
   const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   const curr_time = `${d.getHours()}${d.getMinutes()}`;
@@ -26,6 +25,7 @@ const chkDate = (req, res, next) => {
     Number(curr_time) > Number(thirdUpdateTime) ||
     Number(curr_time) > Number(fourthUpdateTime)
   ) {
+    console.log("update change true");
     UPDATE = true;
   }
 
