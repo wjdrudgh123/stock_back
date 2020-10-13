@@ -62,6 +62,7 @@ const scrap = async (req, res) => {
   if (UPDATE === true && flag === false) {
     console.log("change flag true");
     flag = true;
+    UPDATE = false;
     // 데이터가 없거나 날짜가 바뀌면 스크랩
     try {
       let lists = [];
