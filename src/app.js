@@ -9,6 +9,7 @@ const app = express();
 let TODAY_DATA = [];
 let TODAY = "";
 let UPDATE = false;
+let TIME_UPDATE = false;
 let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
 
 const chkDate = (req, res, next) => {
@@ -20,16 +21,29 @@ const chkDate = (req, res, next) => {
   const secondUpdateTime = "1800";
   const thirdUpdateTime = "2000";
   const fourthUpdateTime = "2300";
+  console.log("TIME_UPDATE: " + TIME_UPDATE);
   if (
-    Number(curr_time) > Number(firstUpdateTime) ||
-    Number(curr_time) > Number(secondUpdateTime) ||
-    Number(curr_time) > Number(thirdUpdateTime) ||
-    Number(curr_time) > Number(fourthUpdateTime) ||
-    TODAY !== date
+    (TIME_UPDATE === true && firstUpdateTime === "1600") ||
+    (TIME_UPDATE === true && secondUpdateTime === "1800") ||
+    (TIME_UPDATE === true && thirdUpdateTime === "2000") ||
+    (TIME_UPDATE === true && fourthUpdateTime === "2300") ||
+    (TIME_UPDATE === true && TODAY !== date)
+  ) {
+    console.log("change timeupdate false");
+    TIME_UPDATE = false;
+  }
+  if (
+    (Number(curr_time) > Number(firstUpdateTime) ||
+      Number(curr_time) > Number(secondUpdateTime) ||
+      Number(curr_time) > Number(thirdUpdateTime) ||
+      Number(curr_time) > Number(fourthUpdateTime) ||
+      TODAY !== date) &&
+    TIME_UPDATE === false
   ) {
     console.log("update&today change true");
     TODAY = date;
     UPDATE = true;
+    TIME_UPDATE = true;
   }
 
   console.log("end check time");
