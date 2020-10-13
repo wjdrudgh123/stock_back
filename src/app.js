@@ -80,8 +80,6 @@ const scrap = async (req, res) => {
       flag = false;
     } else {
       console.log("change flag false");
-      console.log("change Update true");
-      UPDATE = true;
       flag = false;
     }
     console.log("end sending");
