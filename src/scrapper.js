@@ -170,7 +170,7 @@ const getNews = async (driver) => {
         "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
       )
     ),
-    50000
+    150000
   );
   for (let i = 0; i < newsList.length; i++) {
     const anchors = await newsList[i].findElements(By.xpath("./span/a"));
