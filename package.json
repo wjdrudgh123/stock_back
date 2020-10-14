@@ -13,7 +13,7 @@
     "prestart": "npm run build",
     "pro:status": "pm2 list",
     "pro:stop": "pm2 stop stock",
-    "pro:logs":"pm2 logs stock"
+    "pro:logs": "pm2 logs stock"
   },
   "author": "",
   "license": "ISC",
@@ -25,6 +25,7 @@
     "@babel/runtime": "^7.11.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "node-schedule": "^1.3.2",
     "pm2": "^4.5.0",
     "selenium-webdriver": "^4.0.0-alpha.7"
   },

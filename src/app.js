@@ -1,52 +1,47 @@
 import express from "express";
-import "./scrapper";
-import { init } from "./scrapper";
+import { getGoldenCrossCompany, searchingDaum } from "./scrapper";
 import cors from "cors";
+import schedule from "node-schedule";
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
+
+const job1 = schedule.scheduleJob("0 10 16 * * *", getGoldenCross());
+const job2 = schedule.scheduleJob("0 10 18 * * *", getGoldenCross());
+const job3 = schedule.scheduleJob("0 10 20 * * *", getGoldenCross());
+const job4 = schedule.scheduleJob("0 10 23 * * *", getGoldenCross());
 
 const app = express();
+let GOLDENCROSS_LIST = [];
 let TODAY_DATA = [];
 let TODAY = "";
-let UPDATE = false;
-let TIME_UPDATE = false;
-let flag = false; // 중복 호출 되도 프로세스 돌고 있음 안돌게
+let chkPass = false;
 
-const chkDate = (req, res, next) => {
-  console.log("start check time");
+const getGoldenCross = async (req, res, next) => {
   const d = new Date();
   const date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   const curr_time = `${d.getHours()}${d.getMinutes()}`;
-  const firstUpdateTime = "1600";
-  const secondUpdateTime = "1800";
-  const thirdUpdateTime = "2000";
-  const fourthUpdateTime = "2300";
-  console.log("TIME_UPDATE: " + TIME_UPDATE);
+  const startStockTime = 900;
+  const finishStockTime = 1600;
   if (
-    (TIME_UPDATE === true && firstUpdateTime === "1600") ||
-    (TIME_UPDATE === true && secondUpdateTime === "1800") ||
-    (TIME_UPDATE === true && thirdUpdateTime === "2000") ||
-    (TIME_UPDATE === true && fourthUpdateTime === "2300") ||
-    (TIME_UPDATE === true && TODAY !== date)
+    Number(curr_time) >= startStockTime &&
+    Number(curr_time) <= finishStockTime
   ) {
-    console.log("change timeupdate false");
-    TIME_UPDATE = false;
-  }
-  if (
-    (Number(curr_time) > Number(firstUpdateTime) ||
-      Number(curr_time) > Number(secondUpdateTime) ||
-      Number(curr_time) > Number(thirdUpdateTime) ||
-      Number(curr_time) > Number(fourthUpdateTime) ||
-      TODAY !== date) &&
-    TIME_UPDATE === false
-  ) {
-    console.log("update&today change true");
+    console.log("주식시장 운영중");
+    chkPass = true;
+  } else if (TODAY !== date) {
     TODAY = date;
-    UPDATE = true;
-    TIME_UPDATE = true;
+    console.log("골든크로스 주식 가져오기 Start");
+    GOLDENCROSS_LIST = await getGoldenCrossCompany();
+    console.log("골든크로스 주식 가져오기 End");
+    chkPass = false;
   }
+  next();
+};
 
-  console.log("end check time");
+const searchCompany = async (req, res, next) => {
+  if (chkPass === false) {
+    TODAY_DATA = await searchingDaum(GOLDENCROSS_LIST, 1);
+  }
   next();
 };
 
@@ -57,6 +52,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(getGoldenCross);
+app.use(searchCompany);
 app.use(chkDate);
 
 const scrap = async (req, res) => {
@@ -69,37 +66,9 @@ const scrap = async (req, res) => {
   // );
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
-  console.log("today: " + TODAY);
-  console.log("update: " + UPDATE);
-  console.log("flag: " + flag);
 
-  if (UPDATE === true && flag === false) {
-    console.log("change flag true");
-    flag = true;
-    UPDATE = false;
-    // 데이터가 없거나 날짜가 바뀌면 스크랩
-    try {
-      let lists = [];
-      const kospi = await init("KOSPI");
-      const kosdaq = await init("KOSDAQ");
-      lists = kospi.concat(kosdaq);
-      TODAY_DATA = lists;
-      console.log("end sending");
-      res.json(TODAY_DATA);
-    } catch (err) {
-      console.log(err);
-    }
-  } else {
-    if (TODAY_DATA.length !== 0) {
-      console.log("change flag false");
-      flag = false;
-    } else {
-      console.log("change flag false");
-      flag = false;
-    }
-    console.log("end sending");
-    res.json(TODAY_DATA);
-  }
+  console.log("end sending");
+  res.json(TODAY_DATA);
 };
 app.use("/data", scrap);
 app.use("/", (req, res) => {
