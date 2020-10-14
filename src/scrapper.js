@@ -71,29 +71,25 @@ export const searchingDaum = async (companies) => {
     await driver.get(
       `http://finance.daum.net/domestic/search?q=${companyName}`
     );
-    try {
-      const searchingItem = driver
-        .wait(
-          until.elementLocated(
-            By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
-          ),
-          80000
-        )
-        .click();
+    const searchingItem = driver
+      .wait(
+        until.elementLocated(
+          By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
+        ),
+        80000
+      )
+      .click();
 
-      const val = await chkMovingAvgLine(driver);
-      if (val === true) {
-        const news = await getNews(driver);
-        suitableCompanies.push({
-          name: companyName,
-          news: news,
-        });
-      }
-    } catch (err) {
-      console.log(`searchingDaum Err: ${err}`);
-    } finally {
-      await driver.quit();
+    const val = await chkMovingAvgLine(driver);
+    if (val === true) {
+      const news = await getNews(driver);
+      suitableCompanies.push({
+        name: companyName,
+        news: news,
+      });
     }
+
+    await driver.quit();
   }
   console.log("End searching company on Daum");
   return suitableCompanies;
@@ -102,52 +98,47 @@ export const searchingDaum = async (companies) => {
 // 10일선, 5일선 위에 있으면
 const chkMovingAvgLine = async (driver) => {
   console.log("Start get company upto moving line");
-  try {
-    const clickCurrPrice = driver
-      .wait(until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")), 80000)
-      .click();
-    let finPrice = []; // 종가
-    let fiveDay = 0;
-    let tenDay = 0;
-    const dayOfPrice = await driver.wait(
-      until.elementsLocated(
-        By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-      ),
-      100000
-    );
-    for (let i = 0; i < dayOfPrice.length; i++) {
-      const tmpPrice = await driver
-        .findElement(
-          By.xpath(
-            `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-              i + 1
-            }]/td[5]/span`
-          )
+  const clickCurrPrice = driver
+    .wait(until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")), 80000)
+    .click();
+  let finPrice = []; // 종가
+  let fiveDay = 0;
+  let tenDay = 0;
+  const dayOfPrice = await driver.wait(
+    until.elementsLocated(
+      By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
+    ),
+    100000
+  );
+  for (let i = 0; i < dayOfPrice.length; i++) {
+    const tmpPrice = await driver
+      .findElement(
+        By.xpath(
+          `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
+            i + 1
+          }]/td[5]/span`
         )
-        .getText();
-      const price = tmpPrice.replace(/\,/g, "");
-      if (i === 0) {
-        finPrice = Math.ceil(Number(price));
-      }
-      if (i <= 5) {
-        fiveDay += Number(price);
-      } else {
-        tenDay += Number(price);
-      }
+      )
+      .getText();
+    const price = tmpPrice.replace(/\,/g, "");
+    if (i === 0) {
+      finPrice = Math.ceil(Number(price));
     }
-    if (
-      Math.ceil(fiveDay / 5) <= finPrice ||
-      Math.ceil((tenDay + fiveDay) / 10) <= finPrice
-    ) {
-      console.log("End get company upto moving line");
-      return true;
+    if (i <= 5) {
+      fiveDay += Number(price);
+    } else {
+      tenDay += Number(price);
     }
-  } catch (err) {
-    console.log(`moving line Err: ${err}`);
-  } finally {
-    console.log("End empty company upto moving line");
-    return false;
   }
+  if (
+    Math.ceil(fiveDay / 5) <= finPrice ||
+    Math.ceil((tenDay + fiveDay) / 10) <= finPrice
+  ) {
+    console.log("End get company upto moving line");
+    return true;
+  }
+  console.log("End empty company upto moving line");
+  return false;
 };
 
 const getNews = async (driver) => {
@@ -168,44 +159,44 @@ const getNews = async (driver) => {
   const splitDate = splitStr[0].split(".");
   const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
 
-  const pageTap = await driver.findElement(
-    By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a")
-  );
-  await pageTap.click();
-  // 페이지 이동 후 로딩때문에
-  try {
-    const newsList = await driver.wait(
-      until.elementsLocated(
-        By.xpath(
-          "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
-        )
+  const pageTap = await driver
+    .wait(
+      until.elementLocated(
+        By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a")
       ),
-      50000
+      100000
+    )
+    .click();
+  // 페이지 이동 후 로딩때문에
+  const newsList = await driver.wait(
+    until.elementsLocated(
+      By.xpath(
+        "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
+      )
+    ),
+    80000
+  );
+  for (let i = 0; i < newsList.length; i++) {
+    const anchors = await newsList[i].findElements(By.xpath("./span/a"));
+    const p = await newsList[i].findElement(
+      By.xpath("./span/p[@class='date']")
     );
-    for (let i = 0; i < newsList.length; i++) {
-      const anchors = await newsList[i].findElements(By.xpath("./span/a"));
-      const p = await newsList[i].findElement(
-        By.xpath("./span/p[@class='date']")
-      );
-      const tmpDate = await p.getText();
-      const splitDate = await tmpDate.split("·");
-      const trimDate = splitDate[1].trim();
-      const splitYear = trimDate.split(".");
-      const monthDate = Number(`${splitYear[1]}${splitYear[2]}`);
-      if (numStockDate <= monthDate) {
-        const title = await anchors[0].getText();
-        const description = await anchors[1].getText();
-        const link = await anchors[1].getAttribute("href");
-        const newsData = { title: title, description: description, link: link };
-        news.push(newsData);
-      }
+    const tmpDate = await p.getText();
+    const splitDate = await tmpDate.split("·");
+    const trimDate = splitDate[1].trim();
+    const splitYear = trimDate.split(".");
+    const monthDate = Number(`${splitYear[1]}${splitYear[2]}`);
+    if (numStockDate <= monthDate) {
+      const title = await anchors[0].getText();
+      const description = await anchors[1].getText();
+      const link = await anchors[1].getAttribute("href");
+      const newsData = { title: title, description: description, link: link };
+      news.push(newsData);
     }
-  } catch (err) {
-    console.loe(`get news err: ${err}`);
-  } finally {
-    console.log("end getNews");
-    return news;
   }
+
+  console.log("end getNews");
+  return news;
 };
 
 /*

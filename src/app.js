@@ -24,7 +24,7 @@ const getGoldenCross = async (req, res, next) => {
   ) {
     console.log("주식시장 운영중");
     chkPass = true;
-  } else if (TODAY !== date) {
+  } else if (TODAY !== date || GOLDENCROSS_LIST.length === 0) {
     TODAY = date;
     console.log("골든크로스 주식 가져오기 Start");
     GOLDENCROSS_LIST = await getGoldenCrossCompany();
