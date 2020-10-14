@@ -71,25 +71,29 @@ export const searchingDaum = async (companies) => {
     await driver.get(
       `http://finance.daum.net/domestic/search?q=${companyName}`
     );
-    const searchingItem = driver
-      .wait(
-        until.elementLocated(
-          By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
-        ),
-        80000
-      )
-      .click();
+    try {
+      const searchingItem = driver
+        .wait(
+          until.elementLocated(
+            By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
+          ),
+          80000
+        )
+        .click();
 
-    const val = await chkMovingAvgLine(driver);
-    if (val === true) {
-      const news = await getNews(driver);
-      suitableCompanies.push({
-        name: companyName,
-        news: news,
-      });
+      const val = await chkMovingAvgLine(driver);
+      if (val === true) {
+        const news = await getNews(driver);
+        suitableCompanies.push({
+          name: companyName,
+          news: news,
+        });
+      }
+    } catch (err) {
+      console.log(`searchingDaum Err: ${err}`);
+    } finally {
+      await driver.quit();
     }
-
-    await driver.quit();
   }
   console.log("End searching company on Daum");
   return suitableCompanies;
@@ -98,47 +102,52 @@ export const searchingDaum = async (companies) => {
 // 10일선, 5일선 위에 있으면
 const chkMovingAvgLine = async (driver) => {
   console.log("Start get company upto moving line");
-  const clickCurrPrice = driver
-    .wait(until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")), 80000)
-    .click();
-  let finPrice = []; // 종가
-  let fiveDay = 0;
-  let tenDay = 0;
-  const dayOfPrice = await driver.wait(
-    until.elementsLocated(
-      By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-    ),
-    100000
-  );
-  for (let i = 0; i < dayOfPrice.length; i++) {
-    const tmpPrice = await driver
-      .findElement(
-        By.xpath(
-          `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-            i + 1
-          }]/td[5]/span`
+  try {
+    const clickCurrPrice = driver
+      .wait(until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")), 80000)
+      .click();
+    let finPrice = []; // 종가
+    let fiveDay = 0;
+    let tenDay = 0;
+    const dayOfPrice = await driver.wait(
+      until.elementsLocated(
+        By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
+      ),
+      100000
+    );
+    for (let i = 0; i < dayOfPrice.length; i++) {
+      const tmpPrice = await driver
+        .findElement(
+          By.xpath(
+            `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
+              i + 1
+            }]/td[5]/span`
+          )
         )
-      )
-      .getText();
-    const price = tmpPrice.replace(/\,/g, "");
-    if (i === 0) {
-      finPrice = Math.ceil(Number(price));
+        .getText();
+      const price = tmpPrice.replace(/\,/g, "");
+      if (i === 0) {
+        finPrice = Math.ceil(Number(price));
+      }
+      if (i <= 5) {
+        fiveDay += Number(price);
+      } else {
+        tenDay += Number(price);
+      }
     }
-    if (i <= 5) {
-      fiveDay += Number(price);
-    } else {
-      tenDay += Number(price);
+    if (
+      Math.ceil(fiveDay / 5) <= finPrice ||
+      Math.ceil((tenDay + fiveDay) / 10) <= finPrice
+    ) {
+      console.log("End get company upto moving line");
+      return true;
     }
+  } catch (err) {
+    console.log(`moving line Err: ${err}`);
+  } finally {
+    console.log("End empty company upto moving line");
+    return false;
   }
-  if (
-    Math.ceil(fiveDay / 5) <= finPrice ||
-    Math.ceil((tenDay + fiveDay) / 10) <= finPrice
-  ) {
-    console.log("End get company upto moving line");
-    return true;
-  }
-  console.log("End empty company upto moving line");
-  return false;
 };
 
 const getNews = async (driver) => {
@@ -192,7 +201,7 @@ const getNews = async (driver) => {
       }
     }
   } catch (err) {
-    console.loe(`err: ${err}`);
+    console.loe(`get news err: ${err}`);
   } finally {
     console.log("end getNews");
     return news;
