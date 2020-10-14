@@ -130,9 +130,6 @@ const chkMovingAvgLine = async (driver) => {
       tenDay += Number(price);
     }
   }
-  console.log(finPrice);
-  console.log(fiveDay / 5);
-  console.log((tenDay + fiveDay) / 10);
   if (
     Math.ceil(fiveDay / 5) <= finPrice ||
     Math.ceil((tenDay + fiveDay) / 10) <= finPrice

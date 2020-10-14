@@ -5,11 +5,6 @@ import schedule from "node-schedule";
 
 const PORT = 3000;
 
-const job1 = schedule.scheduleJob("0 10 16 * * *", getGoldenCross());
-const job2 = schedule.scheduleJob("0 10 18 * * *", getGoldenCross());
-const job3 = schedule.scheduleJob("0 10 20 * * *", getGoldenCross());
-const job4 = schedule.scheduleJob("0 10 23 * * *", getGoldenCross());
-
 const app = express();
 let GOLDENCROSS_LIST = [];
 let TODAY_DATA = [];
@@ -22,6 +17,7 @@ const getGoldenCross = async (req, res, next) => {
   const curr_time = `${d.getHours()}${d.getMinutes()}`;
   const startStockTime = 900;
   const finishStockTime = 1600;
+
   if (
     Number(curr_time) >= startStockTime &&
     Number(curr_time) <= finishStockTime
@@ -35,12 +31,21 @@ const getGoldenCross = async (req, res, next) => {
     console.log("골든크로스 주식 가져오기 End");
     chkPass = false;
   }
+
   next();
 };
 
+const getAutoData = async () => {
+  TODAY_DATA = await searchingDaum(GOLDENCROSS_LIST, 1);
+};
+
+const job1 = schedule.scheduleJob("0 10 16 * * *", getAutoData);
+const job2 = schedule.scheduleJob("0 10 18 * * *", getAutoData);
+const job3 = schedule.scheduleJob("0 10 20 * * *", getAutoData);
+const job4 = schedule.scheduleJob("0 10 23 * * *", getAutoData);
 const searchCompany = async (req, res, next) => {
   if (chkPass === false) {
-    TODAY_DATA = await searchingDaum(GOLDENCROSS_LIST, 1);
+    await getAutoData();
   }
   next();
 };
@@ -54,7 +59,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(getGoldenCross);
 app.use(searchCompany);
-app.use(chkDate);
 
 const scrap = async (req, res) => {
   console.log("start scrap");
@@ -66,7 +70,7 @@ const scrap = async (req, res) => {
   // );
   // res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   // res.header("Access-Control-Allow-Credentials", true);
-
+  chkPass = true;
   console.log("end sending");
   res.json(TODAY_DATA);
 };
