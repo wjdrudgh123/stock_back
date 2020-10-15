@@ -14,13 +14,12 @@ const init = async () => {
   const driverPath = path.join(__dirname, "../chromedriver");
   const serviceBuilder = new ServiceBuilder(driverPath);
   const options = new chrome.Options();
-  options
-    .addArguments
-    // "headless",
-    // "disable-gpu",
-    // "no-sandbox",
-    // "disable-dev-shm-usage"
-    ();
+  options.addArguments(
+    "headless",
+    "disable-gpu",
+    "no-sandbox",
+    "disable-dev-shm-usage"
+  );
   let driver = await new Builder()
     .forBrowser("chrome")
     .setChromeOptions(options)
@@ -165,8 +164,11 @@ const getNews = async (driver) => {
   const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
 
   try {
-    const clickNews = await driver.findElement(
-      By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a")
+    const clickNews = await driver.wait(
+      until.elementLocated(
+        By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a"),
+        60 * 1000
+      )
     );
     await clickNews.click();
     // 페이지 이동 후 로딩때문에
@@ -176,7 +178,7 @@ const getNews = async (driver) => {
           "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
         )
       ),
-      30 * 1000
+      100 * 1000
     );
     for (let i = 0; i < newsList.length; i++) {
       const anchors = await newsList[i].findElements(By.xpath("./span/a"));
