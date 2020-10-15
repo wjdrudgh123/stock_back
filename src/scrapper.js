@@ -98,47 +98,51 @@ export const searchingDaum = async (companies) => {
 // 10일선, 5일선 위에 있으면
 const chkMovingAvgLine = async (driver) => {
   console.log("Start get company upto moving line");
-  await driver
-    .wait(
+  try {
+    const clickPrice = await driver.wait(
       until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
-      10 * 1000
-    )
-    .click();
-  let finPrice = []; // 종가
-  let fiveDay = 0;
-  let tenDay = 0;
-  const dayOfPrice = await driver.findElements(
-    By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-  );
-  for (let i = 0; i < dayOfPrice.length; i++) {
-    const tmpPrice = await driver
-      .findElement(
-        By.xpath(
-          `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-            i + 1
-          }]/td[5]/span`
+      15 * 1000
+    );
+
+    await clickPrice.click();
+    let finPrice = []; // 종가
+    let fiveDay = 0;
+    let tenDay = 0;
+    const dayOfPrice = await driver.findElements(
+      By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
+    );
+    for (let i = 0; i < dayOfPrice.length; i++) {
+      const tmpPrice = await driver
+        .findElement(
+          By.xpath(
+            `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
+              i + 1
+            }]/td[5]/span`
+          )
         )
-      )
-      .getText();
-    const price = tmpPrice.replace(/\,/g, "");
-    if (i === 0) {
-      finPrice = Math.ceil(Number(price));
+        .getText();
+      const price = tmpPrice.replace(/\,/g, "");
+      if (i === 0) {
+        finPrice = Math.ceil(Number(price));
+      }
+      if (i <= 5) {
+        fiveDay += Number(price);
+      } else {
+        tenDay += Number(price);
+      }
     }
-    if (i <= 5) {
-      fiveDay += Number(price);
-    } else {
-      tenDay += Number(price);
+    if (
+      Math.ceil(fiveDay / 5) <= finPrice ||
+      Math.ceil((tenDay + fiveDay) / 10) <= finPrice
+    ) {
+      console.log("End get company upto moving line");
+      return true;
     }
+    console.log("End empty company upto moving line");
+    return false;
+  } catch (err) {
+    console.log(`chkMovingAvgLine Err: ${err}`);
   }
-  if (
-    Math.ceil(fiveDay / 5) <= finPrice ||
-    Math.ceil((tenDay + fiveDay) / 10) <= finPrice
-  ) {
-    console.log("End get company upto moving line");
-    return true;
-  }
-  console.log("End empty company upto moving line");
-  return false;
 };
 
 const getNews = async (driver) => {
@@ -156,36 +160,39 @@ const getNews = async (driver) => {
   const splitDate = splitStr[0].split(".");
   const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
 
-  await driver
-    .findElement(
+  try {
+    const clickNews = await driver.findElement(
       By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a")
-    )
-    .click();
-  // 페이지 이동 후 로딩때문에
-  const newsList = await driver.wait(
-    until.elementsLocated(
-      By.xpath(
-        "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
-      )
-    ),
-    10 * 1000
-  );
-  for (let i = 0; i < newsList.length; i++) {
-    const anchors = await newsList[i].findElements(By.xpath("./span/a"));
-    const tmpDate = await newsList[i]
-      .findElement(By.xpath("./span/p[@class='date']"))
-      .getText();
-    const splitDate = await tmpDate.split("·");
-    const trimDate = splitDate[1].trim();
-    const splitYear = trimDate.split(".");
-    const monthDate = Number(`${splitYear[1]}${splitYear[2]}`);
-    if (numStockDate <= monthDate) {
-      const title = await anchors[0].getText();
-      const description = await anchors[1].getText();
-      const link = await anchors[1].getAttribute("href");
-      const newsData = { title: title, description: description, link: link };
-      news.push(newsData);
+    );
+    await clickNews.click();
+    // 페이지 이동 후 로딩때문에
+    const newsList = await driver.wait(
+      until.elementsLocated(
+        By.xpath(
+          "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
+        )
+      ),
+      15 * 1000
+    );
+    for (let i = 0; i < newsList.length; i++) {
+      const anchors = await newsList[i].findElements(By.xpath("./span/a"));
+      const tmpDate = await newsList[i]
+        .findElement(By.xpath("./span/p[@class='date']"))
+        .getText();
+      const splitDate = await tmpDate.split("·");
+      const trimDate = splitDate[1].trim();
+      const splitYear = trimDate.split(".");
+      const monthDate = Number(`${splitYear[1]}${splitYear[2]}`);
+      if (numStockDate <= monthDate) {
+        const title = await anchors[0].getText();
+        const description = await anchors[1].getText();
+        const link = await anchors[1].getAttribute("href");
+        const newsData = { title: title, description: description, link: link };
+        news.push(newsData);
+      }
     }
+  } catch (err) {
+    console.log(`getNews Err: ${err}`);
   }
 
   console.log("end getNews");
