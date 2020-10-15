@@ -167,7 +167,7 @@ const getNews = async (url) => {
         )
       )
       .getText();
-
+    console.log(await strStockDate);
     const splitStr = strStockDate.split(" ");
     const splitDate = splitStr[0].split(".");
     const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
@@ -179,13 +179,16 @@ const getNews = async (url) => {
       )
     );
     await clickNews.click();
+    console.log("click ok");
     // 페이지 이동 후 로딩때문에
+    console.log(`newList check`);
     const newsList = await driver.wait(
       until.elementsLocated(
         By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li")
       ),
-      300 * 1000
+      500 * 1000
     );
+    console.log(`end ${newsList.length}`);
 
     for (let i = 0; i < newsList.length; i++) {
       const anchors = await newsList[i].findElements(By.xpath("./span/a"));
