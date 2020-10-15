@@ -52,7 +52,8 @@ export const getGoldenCrossCompany = async () => {
         companyName.indexOf("선물") !== -1 ||
         companyName.indexOf("TIGER") !== -1 ||
         companyName.indexOf("호스팩") !== -1 ||
-        companyName.indexOf("(전환)") !== -1
+        companyName.indexOf("(전환)") !== -1 ||
+        companyName.indexOf("3호") !== -1
       ) {
         continue;
       }
@@ -170,11 +171,11 @@ const getNews = async (url) => {
         )
       )
       .getText();
-    console.log(await strStockDate);
     const splitStr = strStockDate.split(" ");
     const splitDate = splitStr[0].split(".");
     const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
 
+    driver.manage().setTimeouts({ implicit: 30 * 1000 });
     const clickNews = await driver.wait(
       until.elementLocated(
         By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a"),
@@ -182,14 +183,10 @@ const getNews = async (url) => {
       )
     );
     await clickNews.click();
-    console.log("click ok");
     // 페이지 이동 후 로딩때문에
-    console.log(`newList check`);
-    const newsList = await driver.wait(
-      until.elementsLocated(
-        By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li")
-      ),
-      500 * 1000
+    await driver.manage().setTimeouts({ implicit: 60 * 1000 });
+    const newsList = await driver.findElements(
+      By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li")
     );
 
     console.log(`end ${await newsList.length}`);
