@@ -49,7 +49,10 @@ export const getGoldenCrossCompany = async () => {
         companyName.indexOf("KINDEX") !== -1 ||
         companyName.indexOf("KODEX") !== -1 ||
         companyName.indexOf("국고채") !== -1 ||
-        companyName.indexOf("선물") !== -1
+        companyName.indexOf("선물") !== -1 ||
+        companyName.indexOf("TIGER") !== -1 ||
+        companyName.indexOf("호스팩") !== -1 ||
+        companyName.indexOf("(전환)") !== -1
       ) {
         continue;
       }
@@ -84,7 +87,7 @@ export const searchingDaum = async (companies) => {
         const url = await driver.getCurrentUrl();
         const news = await getNews(url);
         suitableCompanies.push({
-          name: companyName,
+          companyName: companyName,
           news: news,
         });
       }
@@ -188,7 +191,8 @@ const getNews = async (url) => {
       ),
       500 * 1000
     );
-    console.log(`end ${newsList.length}`);
+
+    console.log(`end ${await newsList.length}`);
 
     for (let i = 0; i < newsList.length; i++) {
       const anchors = await newsList[i].findElements(By.xpath("./span/a"));
