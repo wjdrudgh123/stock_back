@@ -14,12 +14,13 @@ const init = async () => {
   const driverPath = path.join(__dirname, "../chromedriver");
   const serviceBuilder = new ServiceBuilder(driverPath);
   const options = new chrome.Options();
-  options.addArguments(
-    "headless",
-    "disable-gpu",
-    "no-sandbox",
-    "disable-dev-shm-usage"
-  );
+  options
+    .addArguments
+    // "headless",
+    // "disable-gpu",
+    // "no-sandbox",
+    // "disable-dev-shm-usage"
+    ();
   let driver = await new Builder()
     .forBrowser("chrome")
     .setChromeOptions(options)
@@ -72,8 +73,11 @@ export const searchingDaum = async (companies) => {
       await driver.get(
         `http://finance.daum.net/domestic/search?q=${companyName}`
       );
-      const searchingItem = await driver.findElement(
-        By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
+      const searchingItem = await driver.wait(
+        until.elementLocated(
+          By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
+        ),
+        30 * 1000
       );
       await searchingItem.click();
       const val = await chkMovingAvgLine(driver);
@@ -101,7 +105,7 @@ const chkMovingAvgLine = async (driver) => {
   try {
     const clickPrice = await driver.wait(
       until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
-      15 * 1000
+      30 * 1000
     );
 
     await clickPrice.click();
@@ -172,7 +176,7 @@ const getNews = async (driver) => {
           "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
         )
       ),
-      15 * 1000
+      30 * 1000
     );
     for (let i = 0; i < newsList.length; i++) {
       const anchors = await newsList[i].findElements(By.xpath("./span/a"));

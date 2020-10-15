@@ -68,6 +68,9 @@ const returnJson = async (req, res) => {
     await getAutoData();
   }
   console.log("end scrap");
+  if (TODAY_DATA[0] === "Init") {
+    TODAY_DATA.shift();
+  }
   console.log("start send json");
   res.json(TODAY_DATA);
   console.log("end send json");
