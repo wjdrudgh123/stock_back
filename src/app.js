@@ -69,8 +69,9 @@ const returnJson = async (req, res) => {
   }
   console.log("end scrap");
   if (TODAY_DATA[0] === "Init") {
-    TODAY_DATA.shift();
+    TODAY_DATA.splice(0, 1);
   }
+  console.log(`RETURN DATA!!: ${TODAY_DATA}`);
   console.log("start send json");
   res.json(TODAY_DATA);
   console.log("end send json");

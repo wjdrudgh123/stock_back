@@ -76,7 +76,7 @@ export const searchingDaum = async (companies) => {
         until.elementLocated(
           By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
         ),
-        30 * 1000
+        60 * 1000
       );
       await searchingItem.click();
       const val = await chkMovingAvgLine(driver);
@@ -104,7 +104,7 @@ const chkMovingAvgLine = async (driver) => {
   try {
     const clickPrice = await driver.wait(
       until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
-      30 * 1000
+      60 * 1000
     );
 
     await clickPrice.click();
@@ -174,12 +174,11 @@ const getNews = async (driver) => {
     // 페이지 이동 후 로딩때문에
     const newsList = await driver.wait(
       until.elementsLocated(
-        By.xpath(
-          "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
-        )
+        By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li")
       ),
       100 * 1000
     );
+
     for (let i = 0; i < newsList.length; i++) {
       const anchors = await newsList[i].findElements(By.xpath("./span/a"));
       const tmpDate = await newsList[i]
