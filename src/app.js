@@ -53,7 +53,7 @@ app.use(cors(corsOptions));
 
 const returnJson = async (req, res) => {
   console.log("start scrap");
-
+  console.log(`TODAY GOLDEN ITEM: ${GOLDENCROSS_LIST}`);
   // res.header("Access-Control-Allow-Origin", "https://recomstock.netlify.app");
   // res.header(
   //   "Access-Control-Allow-Headers",

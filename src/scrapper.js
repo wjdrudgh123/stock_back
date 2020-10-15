@@ -81,7 +81,8 @@ export const searchingDaum = async (companies) => {
       await searchingItem.click();
       const val = await chkMovingAvgLine(driver);
       if (val === true) {
-        const news = await getNews(driver);
+        const url = await driver.getCurrentUrl();
+        const news = await getNews(url);
         suitableCompanies.push({
           name: companyName,
           news: news,
@@ -148,22 +149,29 @@ const chkMovingAvgLine = async (driver) => {
   }
 };
 
-const getNews = async (driver) => {
+const getNews = async (url) => {
   console.log("start getNews");
+  const driver = await init();
   let news = [];
 
-  // 주식 장 날짜
-  const detailStk = await driver.findElement(
-    By.xpath(
-      "//div[@class='detailStk']/span/div/span/span[@class='compIntro']/em"
-    )
-  );
-  const strStockDate = await detailStk.getText();
-  const splitStr = strStockDate.split(" ");
-  const splitDate = splitStr[0].split(".");
-  const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
-
   try {
+    await driver.get(url);
+    // 주식 장 날짜
+    const strStockDate = await driver
+      .wait(
+        until.elementLocated(
+          By.xpath(
+            "//div[@class='detailStk']/span/div/span/span[@class='compIntro']/em"
+          ),
+          60 * 1000
+        )
+      )
+      .getText();
+
+    const splitStr = strStockDate.split(" ");
+    const splitDate = splitStr[0].split(".");
+    const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
+
     const clickNews = await driver.wait(
       until.elementLocated(
         By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a"),
@@ -198,10 +206,11 @@ const getNews = async (driver) => {
     }
   } catch (err) {
     console.log(`getNews Err: ${err}`);
+  } finally {
+    await driver.quit();
+    console.log("end getNews");
+    return news;
   }
-
-  console.log("end getNews");
-  return news;
 };
 
 /*
