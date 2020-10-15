@@ -1,6 +1,7 @@
 import { Builder, By, until, Key } from "selenium-webdriver";
 import chrome, { ServiceBuilder } from "selenium-webdriver/chrome";
 import path from "path";
+import { TODAY_DATA } from "./app";
 
 /*
 http://finance.daum.net/domestic/rise_stocks?market=KOSPI
@@ -67,25 +68,25 @@ export const searchingDaum = async (companies) => {
   for (let i = 0; i < companies.length; i++) {
     const companyName = companies[i];
     const driver = await init();
-    await driver.get(
-      `http://finance.daum.net/domestic/search?q=${companyName}`
-    );
-    const searchingItem = await driver
-      .wait(
-        until.elementLocated(
-          By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
-        ),
-        10 * 1000
-      )
-      .click();
-
-    const val = await chkMovingAvgLine(driver);
-    if (val === true) {
-      const news = await getNews(driver);
-      suitableCompanies.push({
-        name: companyName,
-        news: news,
-      });
+    try {
+      await driver.get(
+        `http://finance.daum.net/domestic/search?q=${companyName}`
+      );
+      const searchingItem = await driver.findElement(
+        By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
+      );
+      await searchingItem.click();
+      const val = await chkMovingAvgLine(driver);
+      if (val === true) {
+        const news = await getNews(driver);
+        suitableCompanies.push({
+          name: companyName,
+          news: news,
+        });
+      }
+    } catch (err) {
+      console.log(`searchingDaum Err: ${err}`);
+      TODAY_DATA.length = 0;
     }
 
     await driver.quit();

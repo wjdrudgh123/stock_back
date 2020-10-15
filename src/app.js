@@ -6,8 +6,8 @@ import schedule from "node-schedule";
 const PORT = 3000;
 
 const app = express();
-let GOLDENCROSS_LIST = [];
-let TODAY_DATA = [];
+export let GOLDENCROSS_LIST = [];
+export let TODAY_DATA = [];
 
 const getGoldenCross = async () => {
   const d = new Date();
