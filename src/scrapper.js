@@ -184,7 +184,7 @@ const getNews = async (url) => {
       until.elementsLocated(
         By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li")
       ),
-      100 * 1000
+      300 * 1000
     );
 
     for (let i = 0; i < newsList.length; i++) {
