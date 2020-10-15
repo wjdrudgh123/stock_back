@@ -87,6 +87,7 @@ export const searchingDaum = async (companies) => {
       if (val === true) {
         const url = await driver.getCurrentUrl();
         const news = await getNews(url);
+        console.log(await news);
         suitableCompanies.push({
           companyName: companyName,
           news: news,
@@ -167,7 +168,7 @@ const getNews = async (url) => {
           By.xpath(
             "//div[@class='detailStk']/span/div/span/span[@class='compIntro']/em"
           ),
-          60 * 1000
+          30 * 1000
         )
       )
       .getText();
@@ -178,20 +179,17 @@ const getNews = async (url) => {
     const clickNews = await driver.wait(
       until.elementLocated(
         By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a"),
-        60 * 1000
+        30 * 1000
       )
     );
-    console.log("click: " + clickNews.getText());
     await clickNews.click();
     // 페이지 이동 후 로딩때문에
     const newsList = await driver.wait(
       until.elementLocated(
         By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li"),
-        60 * 60 * 1000
+        60 * 1000
       )
     );
-
-    console.log(`end ${await newsList.length}`);
 
     for (let i = 0; i < newsList.length; i++) {
       const anchors = await newsList[i].findElements(By.xpath("./span/a"));
