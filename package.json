@@ -9,7 +9,7 @@
     "build": "npm run build:server",
     "prebuild": "rm -rf build",
     "build:server": "babel src --out-dir build",
-    "start": "pm2 start build/app.js --name 'stock'",
+    "start": "pm2 start build/app.js --name 'stock' --log-date-format 'YYYY-MM-DD HH:mm'",
     "prestart": "npm run build",
     "pro:status": "pm2 list",
     "pro:stop": "pm2 stop stock",

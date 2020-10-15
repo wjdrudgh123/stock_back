@@ -1,7 +1,6 @@
 import { Builder, By, until, Key } from "selenium-webdriver";
 import chrome, { ServiceBuilder } from "selenium-webdriver/chrome";
 import path from "path";
-import { secondDriver } from "./secondDriver";
 
 /*
 http://finance.daum.net/domestic/rise_stocks?market=KOSPI
@@ -10,7 +9,7 @@ https://finance.naver.com/sise/sise_rise.nhn?sosok=0
 https://finance.naver.com/sise/sise_rise.nhn?sosok=1
 */
 
-const init = async (time, exchange) => {
+const init = async () => {
   const driverPath = path.join(__dirname, "../chromedriver");
   const serviceBuilder = new ServiceBuilder(driverPath);
   const options = new chrome.Options();
@@ -71,12 +70,12 @@ export const searchingDaum = async (companies) => {
     await driver.get(
       `http://finance.daum.net/domestic/search?q=${companyName}`
     );
-    const searchingItem = driver
+    const searchingItem = await driver
       .wait(
         until.elementLocated(
           By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
         ),
-        80000
+        10 * 1000
       )
       .click();
 
@@ -98,17 +97,17 @@ export const searchingDaum = async (companies) => {
 // 10일선, 5일선 위에 있으면
 const chkMovingAvgLine = async (driver) => {
   console.log("Start get company upto moving line");
-  const clickCurrPrice = driver
-    .wait(until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")), 80000)
+  await driver
+    .wait(
+      until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
+      10 * 1000
+    )
     .click();
   let finPrice = []; // 종가
   let fiveDay = 0;
   let tenDay = 0;
-  const dayOfPrice = await driver.wait(
-    until.elementsLocated(
-      By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-    ),
-    100000
+  const dayOfPrice = await driver.findElements(
+    By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
   );
   for (let i = 0; i < dayOfPrice.length; i++) {
     const tmpPrice = await driver
@@ -146,25 +145,19 @@ const getNews = async (driver) => {
   let news = [];
 
   // 주식 장 날짜
-  const detailStk = await driver.wait(
-    until.elementLocated(
-      By.xpath(
-        "//div[@class='detailStk']/span/div/span/span[@class='compIntro']/em"
-      )
-    ),
-    30000
+  const detailStk = await driver.findElement(
+    By.xpath(
+      "//div[@class='detailStk']/span/div/span/span[@class='compIntro']/em"
+    )
   );
   const strStockDate = await detailStk.getText();
   const splitStr = strStockDate.split(" ");
   const splitDate = splitStr[0].split(".");
   const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
 
-  const pageTap = await driver
-    .wait(
-      until.elementLocated(
-        By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a")
-      ),
-      100000
+  await driver
+    .findElement(
+      By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a")
     )
     .click();
   // 페이지 이동 후 로딩때문에
@@ -174,14 +167,13 @@ const getNews = async (driver) => {
         "//div[@id='boxContents']/div[@style='']/div/div[@class='box_contents']/div/ul/li"
       )
     ),
-    80000
+    10 * 1000
   );
   for (let i = 0; i < newsList.length; i++) {
     const anchors = await newsList[i].findElements(By.xpath("./span/a"));
-    const p = await newsList[i].findElement(
-      By.xpath("./span/p[@class='date']")
-    );
-    const tmpDate = await p.getText();
+    const tmpDate = await newsList[i]
+      .findElement(By.xpath("./span/p[@class='date']"))
+      .getText();
     const splitDate = await tmpDate.split("·");
     const trimDate = splitDate[1].trim();
     const splitYear = trimDate.split(".");
