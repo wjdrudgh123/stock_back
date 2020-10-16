@@ -1,5 +1,5 @@
 import express from "express";
-import { getGoldenCrossCompany, searchingDaum } from "./scrapper";
+import { getGoldenCrossCompany, companyInfo } from "./scrapper";
 import cors from "cors";
 import schedule from "node-schedule";
 
@@ -19,7 +19,7 @@ const getGoldenCross = async () => {
 
 const getAutoData = async () => {
   console.log(`Get Company Info Start`);
-  TODAY_DATA = await searchingDaum(GOLDENCROSS_LIST, 1);
+  TODAY_DATA = await companyInfo(GOLDENCROSS_LIST, 1);
   console.log(`Get Company Info End`);
 };
 const getGolendCrossJob1 = schedule.scheduleJob(
@@ -35,13 +35,6 @@ const getCompaniesJob1 = schedule.scheduleJob("0 00 17 * * *", getAutoData);
 const getCompaniesJob2 = schedule.scheduleJob("0 00 19 * * *", getAutoData);
 const getCompaniesJob3 = schedule.scheduleJob("0 00 21 * * *", getAutoData);
 const getCompaniesJob4 = schedule.scheduleJob("0 00 23 * * *", getAutoData);
-
-const searchCompany = async (req, res, next) => {
-  if (chkPass === false) {
-    await getAutoData();
-  }
-  next();
-};
 
 const corsOptions = {
   origin: ["http://localhost:3000", "https://recomstock.netlify.app"],

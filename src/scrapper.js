@@ -20,7 +20,7 @@ const init = async () => {
     "no-sandbox",
     "disable-dev-shm-usage"
   );
-  let driver = await new Builder()
+  const driver = await new Builder()
     .forBrowser("chrome")
     .setChromeOptions(options)
     .setChromeService(serviceBuilder)
@@ -44,6 +44,14 @@ export const getGoldenCrossCompany = async () => {
       const companyName = await companies[i]
         .findElement(By.xpath("./td[2]/a"))
         .getText();
+      const upDown = await companies[i]
+        .findElement(By.xpath("./td[5]/span"))
+        .getText();
+
+      if (upDown[0] !== "+") {
+        continue;
+      }
+
       // KINDEX, KODEX, 선물, 국고채 제외
       if (
         companyName.indexOf("KINDEX") !== -1 ||
@@ -53,7 +61,8 @@ export const getGoldenCrossCompany = async () => {
         companyName.indexOf("TIGER") !== -1 ||
         companyName.indexOf("호스팩") !== -1 ||
         companyName.indexOf("(전환)") !== -1 ||
-        companyName.indexOf("3호") !== -1
+        companyName.indexOf("3호") !== -1 ||
+        companyName.indexOf("ETN") !== -1
       ) {
         continue;
       }
@@ -61,245 +70,108 @@ export const getGoldenCrossCompany = async () => {
     }
   }
   console.log("End get golden cross company");
+
   await driver.quit();
   return goldenCompanyList;
 };
 
-export const searchingDaum = async (companies) => {
-  // flag 1이면 5일 평균가격 2이면 뉴스
-  console.log("Start searching company on Daum");
-  const suitableCompanies = [];
+export const companyInfo = async (companies) => {
+  let companyLists = [];
   for (let i = 0; i < companies.length; i++) {
-    const companyName = companies[i];
-    const driver = await init();
-    try {
-      await driver.get(
-        `http://finance.daum.net/domestic/search?q=${companyName}`
-      );
-      const searchingItem = await driver.wait(
-        until.elementLocated(
-          By.xpath("//*[@id='boxContents']/div[2]/div/table/tbody/tr/td[2]/a")
-        ),
-        60 * 1000
-      );
-      await searchingItem.click();
-      const val = await chkMovingAvgLine(driver);
-      if (val === true) {
-        const url = await driver.getCurrentUrl();
-        const news = await getNews(url);
-        console.log(await news);
-        suitableCompanies.push({
-          companyName: companyName,
-          news: news,
-        });
-      }
-    } catch (err) {
-      console.log(`searchingDaum Err: ${err}`);
-      TODAY_DATA.length = 0;
-    }
-
-    await driver.quit();
+    const list = await getCompanyDetail(companies[i]);
+    companyLists.push(list);
   }
-  console.log("End searching company on Daum");
-  return suitableCompanies;
+  return companyLists;
 };
 
-// 10일선, 5일선 위에 있으면
-const chkMovingAvgLine = async (driver) => {
-  console.log("Start get company upto moving line");
-  try {
-    const clickPrice = await driver.wait(
-      until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
-      60 * 1000
-    );
-
-    await clickPrice.click();
-    let finPrice = []; // 종가
-    let fiveDay = 0;
-    let tenDay = 0;
-    const dayOfPrice = await driver.findElements(
-      By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-    );
-    for (let i = 0; i < dayOfPrice.length; i++) {
-      const tmpPrice = await driver
-        .findElement(
-          By.xpath(
-            `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-              i + 1
-            }]/td[5]/span`
-          )
-        )
-        .getText();
-      const price = tmpPrice.replace(/\,/g, "");
-      if (i === 0) {
-        finPrice = Math.ceil(Number(price));
-      }
-      if (i <= 5) {
-        fiveDay += Number(price);
-      } else {
-        tenDay += Number(price);
-      }
-    }
-    if (
-      Math.ceil(fiveDay / 5) <= finPrice ||
-      Math.ceil((tenDay + fiveDay) / 10) <= finPrice
-    ) {
-      console.log("End get company upto moving line");
-      return true;
-    }
-    console.log("End empty company upto moving line");
-    return false;
-  } catch (err) {
-    console.log(`chkMovingAvgLine Err: ${err}`);
-  }
-};
-
-const getNews = async (url) => {
-  console.log("start getNews");
+const getCompanyDetail = async (company) => {
+  let rtVal = {};
   const driver = await init();
-  let news = [];
-
-  try {
-    await driver.get(url);
-    // 주식 장 날짜
-    const strStockDate = await driver
-      .wait(
-        until.elementLocated(
-          By.xpath(
-            "//div[@class='detailStk']/span/div/span/span[@class='compIntro']/em"
-          ),
-          30 * 1000
-        )
-      )
-      .getText();
-    const splitStr = strStockDate.split(" ");
-    const splitDate = splitStr[0].split(".");
-    const numStockDate = Number(`${splitDate[0]}${splitDate[1]}`);
-
-    const clickNews = await driver.wait(
-      until.elementLocated(
-        By.xpath("//div[@class='tabB']/table/tbody/tr[@id='boxTabs']/td[5]/a"),
-        30 * 1000
-      )
-    );
-    await clickNews.click();
-    // 페이지 이동 후 로딩때문에
-    const newsList = await driver.wait(
-      until.elementLocated(
-        By.xpath("//*[@id='boxContents']/div[5]/div[1]/div[2]/div/ul/li"),
-        60 * 1000
-      )
-    );
-
-    for (let i = 0; i < newsList.length; i++) {
-      const anchors = await newsList[i].findElements(By.xpath("./span/a"));
-      const tmpDate = await newsList[i]
-        .findElement(By.xpath("./span/p[@class='date']"))
-        .getText();
-      const splitDate = await tmpDate.split("·");
-      const trimDate = splitDate[1].trim();
-      const splitYear = trimDate.split(".");
-      const monthDate = Number(`${splitYear[1]}${splitYear[2]}`);
-      if (numStockDate <= monthDate) {
-        const title = await anchors[0].getText();
-        const description = await anchors[1].getText();
-        const link = await anchors[1].getAttribute("href");
-        const newsData = { title: title, description: description, link: link };
-        news.push(newsData);
+  console.log("Start getCompanyDetail Func");
+  await driver.get("https://finance.naver.com/sise/");
+  const inputBox = await driver.wait(
+    until.elementLocated(By.xpath("//*[@id='stock_items']")),
+    10000
+  );
+  await inputBox.sendKeys(company, Key.RETURN);
+  const exchangeKind = await driver.wait(
+    until.elementLocated(By.xpath("//*[@id='middle']/div[1]/div[1]/div/img"))
+  );
+  const stockExchange = await exchangeKind.getAttribute("alt");
+  await (
+    await driver.findElement(By.xpath("//*[@id='content']/ul/li[2]/a"))
+  ).click();
+  const iframes = await driver.wait(
+    until.elementsLocated(By.css("iframe")),
+    10000
+  );
+  for (let i = 0; i < iframes.length; i++) {
+    console.log(`Start getCompanyDetail iframe`);
+    const iframeTitle = await iframes[i].getAttribute("title");
+    if (iframeTitle === "일별 시세") {
+      // iframe으로 스위치
+      const frame = await driver.switchTo().frame(iframes[i]);
+      const marketPrices = await driver.wait(
+        until.elementsLocated(By.xpath("/html/body/table[1]/tbody/tr")),
+        10000
+      );
+      let tmpPrices = [];
+      // 10일 가격
+      for (let j = 1; j < marketPrices.length; j++) {
+        const trs = await marketPrices[j].findElements(By.xpath("./td"));
+        const chkTr = await trs[0].getAttribute("align");
+        if (chkTr !== "center") {
+          continue;
+        }
+        const price = await trs[1].getText();
+        price = price.replace(/\,/g, "");
+        tmpPrices.push(Number(price));
       }
-    }
-  } catch (err) {
-    console.log(`getNews Err: ${err}`);
-  } finally {
-    await driver.quit();
-    console.log("end getNews");
-    return news;
-  }
-};
-
-/*
-const getDaum = async (driver, exchange) => {
-  await driver.get(
-    `http://finance.daum.net/domestic/rise_stocks?market=${exchange}`
-  );
-  const companies = await driver.findElements(
-    By.xpath("//*[@id='boxRiseStocks']/div[2]/div[1]/table/tbody/tr")
-  );
-  const list = await processScrap(companies);
-  return list;
-};
-
-const processScrap = async (companies) => {
-  const companyList = [];
-  for (let i = 0; i < companies.length; i++) {
-    let stockData = {};
-    const companyTd = await companies[i].findElements(By.xpath("./td"));
-
-    const companyName = await companyTd[1].getText();
-    const links = await companyTd[1]
-      .findElement(By.xpath("./a"))
-      .getAttribute("href");
-    const news = await secondDriver(links);
-
-    if (news) {
-      stockData = {
-        companyName: companyName,
-        news: news,
+      const boxPrice = await getProperPrice(tmpPrices);
+      rtVal = {
+        companyName: company,
+        boxPrice: boxPrice,
       };
-      companyList.push(stockData);
+    }
+    await driver.switchTo().defaultContent();
+    console.log(`End getCompanyDetail iframe`);
+  }
+  await driver.quit();
+  console.log(`End getCompanyDetail Func`);
+  return rtVal;
+};
+
+const getProperPrice = (price) => {
+  let priceOfFive = 0;
+  let priceOfTen = 0;
+
+  for (let i = 0; i <= price.length; i++) {
+    if (i < 5) {
+      priceOfFive += price[i];
+    } else if (i < 10) {
+      priceOfTen += price[i];
     }
   }
-  console.log("end companyList");
-  return companyList;
-};
 
-// 거래대금 평균
-/*
-const getNaver = async (driver, exchange) => {
-  await driver.get(
-    `https://finance.naver.com/sise/sise_rise.nhn?sosok=${exchange}`
-  );
-
-  const form = await driver.findElement(
-    By.xpath("//div[@class='box_type_m']/form/div/div")
-  );
-  const tr = await form.findElements(By.xpath("./table/tbody/tr"));
-  const td = await tr[0].findElements(By.xpath("./td"));
-  const chkInput = await td[2].findElement(
-    By.xpath("./input[@type='checkbox']")
-  );
-  const isChecked = await chkInput.getAttribute("checked");
-  if (!isChecked) {
-    const chkTd = await tr[0].findElements(By.xpath("./td[@class='choice']")); // 최대 7개이니까 기본 체크 하나 빼야됨
-    const lastCheckedItem = await chkTd[chkTd.length - 1].findElement(
-      By.xpath("./input[@type='checkbox']")
-    );
-    await lastCheckedItem.click();
-    await chkInput.click();
+  priceOfTen = priceOfTen + priceOfFive;
+  const avgFive = Number(priceOfFive) / 5;
+  const avgTen = Number(priceOfTen) / 10;
+  // 5일선이나 10일선 보다 밑이면 false
+  if (price[0] < avgFive || price[0] < avgTen) {
+    return false;
   }
-  const button = await form.findElements(By.xpath("./div/a"));
-  await button[0].click();
+  const avgFive005 = Math.ceil(avgFive * 0.05);
+  const fiveBoxTop = avgFive + avgFive005;
+  const fiveBoxBottom = avgFive - avgFive005;
 
-  const price = await getAvgPrice(driver);
-  return price;
-};
+  const avgTen005 = Math.ceil(avgTen * 0.05);
+  const tenBoxTop = avgTen + avgTen005;
+  const tenBoxBottom = avgTen - avgTen005;
 
-const getAvgPrice = async (driver) => {
-  let totalPrice = 0;
-  const table = await driver.findElements(
-    By.xpath("//div[@class='box_type_l']/table/tbody/tr")
-  );
-  const totalNum = table.length;
-  for (let index = 2; index < totalNum; index++) {
-    const td = await table[index].findElements(By.xpath("./td"));
-    const checkTd = await td[0].getAttribute("class");
-    if (checkTd === "no") {
-      const tempPrice = await td[6].getText();
-      const price = tempPrice.replace(/,/g, "");
-      totalPrice += Number(price);
-    }
-  }
-  const retPrice = totalPrice / (totalNum - 2);
-  return Math.ceil(retPrice);
+  const box = {
+    firstBox: [fiveBoxBottom, tenBoxTop],
+    secBox: [tenBoxBottom, fiveBoxTop],
+  };
+
+  return box;
 };
-*/
