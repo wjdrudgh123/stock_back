@@ -1,7 +1,6 @@
 import { Builder, By, until, Key } from "selenium-webdriver";
 import chrome, { ServiceBuilder } from "selenium-webdriver/chrome";
 import path from "path";
-import { TODAY_DATA } from "./app";
 
 /*
 http://finance.daum.net/domestic/rise_stocks?market=KOSPI
@@ -95,9 +94,10 @@ const getCompanyDetail = async (company) => {
   );
   await inputBox.sendKeys(company, Key.RETURN);
   const exchangeKind = await driver.wait(
-    until.elementLocated(By.xpath("//*[@id='middle']/div[1]/div[1]/div/img"))
+    until.elementLocated(By.xpath("//*[@id='middle']/div[1]/div[1]/div/img")),
+    10000
   );
-  const stockExchange = await exchangeKind.getAttribute("alt");
+
   await (
     await driver.findElement(By.xpath("//*[@id='content']/ul/li[2]/a"))
   ).click();
@@ -110,7 +110,7 @@ const getCompanyDetail = async (company) => {
     const iframeTitle = await iframes[i].getAttribute("title");
     if (iframeTitle === "일별 시세") {
       // iframe으로 스위치
-      const frame = await driver.switchTo().frame(iframes[i]);
+      await driver.switchTo().frame(iframes[i]);
       const marketPrices = await driver.wait(
         until.elementsLocated(By.xpath("/html/body/table[1]/tbody/tr")),
         10000
@@ -118,12 +118,12 @@ const getCompanyDetail = async (company) => {
       let tmpPrices = [];
       // 10일 가격
       for (let j = 1; j < marketPrices.length; j++) {
-        const trs = await marketPrices[j].findElements(By.xpath("./td"));
-        const chkTr = await trs[0].getAttribute("align");
+        const tds = await marketPrices[j].findElements(By.xpath("./td"));
+        const chkTr = await tds[0].getAttribute("align");
         if (chkTr !== "center") {
           continue;
         }
-        const price = await trs[1].getText();
+        const price = await tds[1].getText();
         price = price.replace(/\,/g, "");
         tmpPrices.push(Number(price));
       }
@@ -174,4 +174,89 @@ const getProperPrice = (price) => {
   };
 
   return box;
+};
+
+/*
+  뉴스 가져오기
+*/
+
+export const getNews = async (companies) => {
+  let news = [];
+  for (let i = 0; i < companies.length; i++) {
+    const list = await getCompanyNews(companies[i]);
+    news.push(list);
+  }
+  return news;
+};
+
+const getCompanyNews = async (company) => {
+  const driver = await init();
+  console.log("Start getCompanyNews Func");
+  await driver.get("https://finance.naver.com/sise/");
+  const inputBox = await driver.wait(
+    until.elementLocated(By.xpath("//*[@id='stock_items']")),
+    10000
+  );
+  await inputBox.sendKeys(company, Key.RETURN);
+  const getDayOfTrade = await driver
+    .wait(until.elementLocated(By.xpath("//*[@id='time']/em")), 10000)
+    .getText();
+  const tradeDay = getDayOfTrade.split(" ");
+  const convertNumber = tradeDay[0].split(".");
+  const day = Number(
+    `${convertNumber[0]}${convertNumber[1]}${convertNumber[2]}`
+  );
+
+  await (
+    await driver.findElement(By.xpath("//*[@id='content']/ul/li[5]/a"))
+  ).click();
+
+  const iframes = await driver.wait(
+    until.elementsLocated(By.css("iframe")),
+    10000
+  );
+  let newsList = [];
+  for (let i = 0; i < iframes.length; i++) {
+    console.log(`Start getCompanyNews iframe`);
+    const iframeTitle = await iframes[i].getAttribute("title");
+    if (iframeTitle === "뉴스 리스트영역") {
+      // iframe으로 스위치
+      await driver.switchTo().frame(iframes[i]);
+      const companyNews = await driver.wait(
+        until.elementsLocated(By.xpath("/html/body/div/table[1]/tbody/tr")),
+        10000
+      );
+
+      for (let j = 1; j < companyNews.length; j++) {
+        const tds = await companyNews[j].findElements(By.xpath("./td"));
+        const getNewsDay = await tds[2].getText();
+        const newsDay = getNewsDay.split(" ");
+        const convertNewsDay = newsDay[0].split(".");
+        const numDay = Number(
+          `${convertNewsDay[0]}${convertNewsDay[1]}${convertNewsDay[2]}`
+        );
+        /*
+          뉴스 일자가 시장 날짜보다 느리면 break
+        */
+        if (day > numDay) {
+          break;
+        }
+        const title = await (
+          await tds[0].findElement(By.xpath("./a"))
+        ).getText();
+        const link = await (
+          await tds[0].findElement(By.xpath("./a"))
+        ).getAttribute("href");
+        newsList = {
+          newsTitle: title,
+          newsLink: link,
+        };
+      }
+    }
+    await driver.switchTo().defaultContent();
+    console.log(`End getCompanyNews iframe`);
+  }
+  await driver.quit();
+  console.log(`End getCompanyNews Func`);
+  return newsList;
 };

@@ -1,13 +1,15 @@
 import express from "express";
-import { getGoldenCrossCompany, companyInfo } from "./scrapper";
+import { getGoldenCrossCompany, companyInfo, getNews } from "./scrapper";
 import cors from "cors";
 import schedule from "node-schedule";
 
 const PORT = 3000;
 
 const app = express();
-export let GOLDENCROSS_LIST = [];
-export let TODAY_DATA = [];
+let GOLDENCROSS_LIST = [];
+let CONMPANY_INFO = [];
+let NEWS = [];
+let TODAY_DATA = [];
 
 const getGoldenCross = async () => {
   const d = new Date();
@@ -15,12 +17,19 @@ const getGoldenCross = async () => {
   console.log(`Time: ${date} Get Golden Cross Start`);
   GOLDENCROSS_LIST = await getGoldenCrossCompany();
   console.log(`Time: ${date} Get Golden Cross End`);
+  await getAutoData();
 };
 
 const getAutoData = async () => {
   console.log(`Get Company Info Start`);
-  TODAY_DATA = await companyInfo(GOLDENCROSS_LIST, 1);
+  CONMPANY_INFO = await companyInfo(GOLDENCROSS_LIST);
   console.log(`Get Company Info End`);
+};
+
+const getAutoNews = async () => {
+  console.log("Get New Start");
+  NEWS = await getNews(GOLDENCROSS_LIST);
+  console.log("Get New End");
 };
 const getGolendCrossJob1 = schedule.scheduleJob(
   "0 00 16 * * 1-5",
@@ -31,10 +40,10 @@ const getGolendCrossJob2 = schedule.scheduleJob(
   getGoldenCross
 );
 
-const getCompaniesJob1 = schedule.scheduleJob("0 00 17 * * *", getAutoData);
-const getCompaniesJob2 = schedule.scheduleJob("0 00 19 * * *", getAutoData);
-const getCompaniesJob3 = schedule.scheduleJob("0 00 21 * * *", getAutoData);
-const getCompaniesJob4 = schedule.scheduleJob("0 00 23 * * *", getAutoData);
+const getCompaniesJob1 = schedule.scheduleJob("0 00 17 * * *", getAutoNews);
+const getCompaniesJob2 = schedule.scheduleJob("0 00 19 * * *", getAutoNews);
+const getCompaniesJob3 = schedule.scheduleJob("0 00 21 * * *", getAutoNews);
+const getCompaniesJob4 = schedule.scheduleJob("0 00 23 * * *", getAutoNews);
 
 const corsOptions = {
   origin: ["http://localhost:3000", "https://recomstock.netlify.app"],
@@ -58,13 +67,16 @@ const returnJson = async (req, res) => {
     console.log(`${TODAY_DATA.length}/ scrap start cause no data`);
     TODAY_DATA.push("Init");
     await getGoldenCross();
-    await getAutoData();
+    await getAutoNews();
   }
   console.log("end scrap");
   if (TODAY_DATA[0] === "Init") {
     TODAY_DATA.splice(0, 1);
   }
-  console.log(`RETURN DATA!!: ${TODAY_DATA}`);
+  for (let index = 0; index < CONMPANY_INFO.length; index++) {
+    CONMPANY_INFO[index]["news"] = NEWS[index];
+  }
+  TODAY_DATA = CONMPANY_INFO;
   console.log("start send json");
   res.json(TODAY_DATA);
   console.log("end send json");
