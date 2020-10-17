@@ -154,8 +154,8 @@ const getProperPrice = (price) => {
   }
 
   priceOfTen = priceOfTen + priceOfFive;
-  const avgFive = Number(priceOfFive) / 5;
-  const avgTen = Number(priceOfTen) / 10;
+  const avgFive = Math.ceil(Number(priceOfFive) / 5);
+  const avgTen = Math.ceil(Number(priceOfTen) / 10);
   // 5일선이나 10일선 보다 밑이면 false
   if (price[0] < avgFive || price[0] < avgTen) {
     return false;
