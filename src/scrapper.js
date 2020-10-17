@@ -247,10 +247,10 @@ const getCompanyNews = async (company) => {
         const link = await (
           await tds[0].findElement(By.xpath("./a"))
         ).getAttribute("href");
-        newsList = {
+        newsList.push({
           newsTitle: title,
           newsLink: link,
-        };
+        });
       }
     }
     await driver.switchTo().defaultContent();
