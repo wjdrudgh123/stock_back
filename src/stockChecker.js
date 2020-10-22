@@ -36,8 +36,10 @@ const connectServer = async (url) => {
 };
 
 export const startSearching = async () => {
+  console.log("START SEARCHING FUNC START!!!");
   await searchingSetting(URL_KOSPI);
   await searchingSetting(URL_KOSDAQ);
+  console.log(`START SEARCHING FUNC FINISH: ${FINAL_PICK.length}`);
   return FINAL_PICK;
 };
 
@@ -83,7 +85,7 @@ const searchingSetting = async (url) => {
     }
   }
   console.log(`CHECK COMPANY FINISH`);
-  console.log(FINAL_PICK);
+  return FINAL_PICK;
 };
 
 const checkSettingRadioBtn = async (driver, log) => {
@@ -114,14 +116,18 @@ const checkSettingRadioBtn = async (driver, log) => {
 const getProperCompany = async (tr) => {
   console.log(`GET PROPER COMPANY FUNC START`);
   /*
-    거래량 10% 차이나는 종목 확인
+    거래량 20% 차이나는 종목 확인
   */
   const checkTr = await tr
     .findElement(By.xpath("./td[1]"))
     .getAttribute("class");
+
   if (checkTr === "no") {
     const price = await tr.findElement(By.xpath("./td[3]")).getText();
-    if (Number(price.replace(/\,/g, "")) > 1000) {
+    const tmpUpDown = await tr.findElement(By.xpath("./td[5]")).getText(); // 하락률
+    const upDown = tmpUpDown.replace(/\%/g, "");
+
+    if (Number(price.replace(/\,/g, "")) > 1000 && Number(upDown) < -6.5) {
       const lastTrade = await tr.findElement(By.xpath("./td[6]")).getText();
       const todayTrade = await tr.findElement(By.xpath("./td[7]")).getText();
 
@@ -130,7 +136,8 @@ const getProperCompany = async (tr) => {
           Number(lastTrade.replace(/\,/g, ""))) /
           Number(todayTrade.replace(/\,/g, ""))) *
         100;
-      if (tradeRating > 20) {
+
+      if (tradeRating >= -35) {
         const aTag = await tr.findElement(By.xpath("./td[2]/a"));
         const name = await aTag.getText();
         const url = await aTag.getAttribute("href");
@@ -173,7 +180,7 @@ const checkCompany = async ({ name, url }) => {
       until.elementLocated(By.xpath("//*[@id='content']/ul/li[2]/a")),
       10000
     )
-  ).click(); // 뉴스탭 클릭
+  ).click();
   await driver.manage().setTimeouts({ implicit: 15000 });
   const iframes = await driver.wait(
     until.elementsLocated(By.css("iframe")),
@@ -190,7 +197,8 @@ const checkCompany = async ({ name, url }) => {
         10000
       );
       let lowPrice = 999999999;
-      for (let j = 2; j < 7; j++) {
+
+      for (let j = 2; j < 5; j++) {
         const checkPricePoll = await marketPrices[j]
           .findElement(By.xpath("./td[3]/span"))
           .getAttribute("class");
@@ -199,6 +207,7 @@ const checkCompany = async ({ name, url }) => {
             By.xpath("/html/body/table[1]/tbody/tr[3]/td[6]/span")
           )
         ).getText();
+
         const lowPric = Number(tmpLowPrice.replace(/\,/g, ""));
 
         if (lowPric < lowPrice) {
