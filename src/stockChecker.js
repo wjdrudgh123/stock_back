@@ -137,7 +137,7 @@ const getProperCompany = async (tr) => {
           Number(todayTrade.replace(/\,/g, ""))) *
         100;
 
-      if (tradeRating >= -35) {
+      if (tradeRating >= -30) {
         const aTag = await tr.findElement(By.xpath("./td[2]/a"));
         const name = await aTag.getText();
         const url = await aTag.getAttribute("href");
@@ -196,28 +196,65 @@ const checkCompany = async ({ name, url }) => {
         until.elementsLocated(By.xpath("/html/body/table[1]/tbody/tr")),
         10000
       );
-      let lowPrice = 999999999;
+
+      // 당일 종가
+      const tmpTodayLowPrice = await (
+        await driver.findElement(
+          By.xpath("/html/body/table[1]/tbody/tr[3]/td[6]/span")
+        )
+      ).getText();
+      // 당일 저가
+      const tmpTodayLastPrice = await (
+        await driver.findElement(
+          By.xpath("/html/body/table[1]/tbody/tr[3]/td[2]/span")
+        )
+      ).getText();
+      const todayLastPrice = Number(tmpTodayLastPrice.replace(/\,/g, ""));
+      const todayLowPrice = Number(tmpTodayLowPrice.replace(/\,/g, ""));
 
       for (let j = 2; j < 5; j++) {
         const checkPricePoll = await marketPrices[j]
           .findElement(By.xpath("./td[3]/span"))
           .getAttribute("class");
-        const tmpLowPrice = await (
-          await marketPrices[j].findElement(
-            By.xpath("/html/body/table[1]/tbody/tr[3]/td[6]/span")
-          )
-        ).getText();
 
-        const lowPric = Number(tmpLowPrice.replace(/\,/g, ""));
-
-        if (lowPric < lowPrice) {
-          lowPrice = lowPric;
-        }
         const pollSplit = checkPricePoll.split(" ");
 
         if (pollSplit[2] === "red02") {
-          await driver.quit();
-          return { name: name, lowPrice: lowPrice };
+          // 장대 양봉 종가
+          const tmpLastPrice = await (
+            await marketPrices[j].findElement(By.xpath("./td[2]/span"))
+          ).getText();
+          // 장대 양봉 시가
+          const tmpStartPrice = await (
+            await marketPrices[j].findElement(By.xpath("./td[4]/span"))
+          ).getText();
+          // 장대 양봉 고가
+          const tmpHighPrice = await (
+            await marketPrices[j].findElement(By.xpath("./td[5]/span"))
+          ).getText();
+          // 장대 양봉 저가
+          const tmpLowPrice = await (
+            await marketPrices[j].findElement(By.xpath("./td[6]/span"))
+          ).getText();
+
+          const startPrice = Number(tmpStartPrice.replace(/\,/g, ""));
+          const endPrice = Number(tmpLastPrice.replace(/\,/g, ""));
+          const lowPrice = Number(tmpLowPrice.replace(/\,/g, ""));
+          const highPrice = Number(tmpHighPrice.replace(/\,/g, ""));
+
+          const upDownRate = ((endPrice - startPrice) / startPrice) * 100;
+          const middle = (lowPrice + highPrice) / 2;
+
+          if (upDownRate > 12) {
+            if (todayLastPrice >= middle) {
+              await driver.quit();
+              return {
+                name: name,
+                lowPrice: lowPrice,
+                todayLow: todayLowPrice,
+              };
+            }
+          }
         }
       }
       await driver.quit();
