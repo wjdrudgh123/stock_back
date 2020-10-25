@@ -1,5 +1,6 @@
 import express from "express";
 import { startSearching } from "./stockChecker";
+import { getNextSchedule } from "./getStockSchedule";
 import cors from "cors";
 import schedule from "node-schedule";
 
@@ -7,17 +8,22 @@ const PORT = 4000;
 
 const app = express();
 
-let TODAY_DATA = [];
+let TODAY_DATA = {};
 let initFlag = false; // 처음 서버 실행할때
 
 const getTodayCompany = async () => {
-  TODAY_DATA = await startSearching();
+  TODAY_DATA["company"] = await startSearching();
+};
+const getWeeksNews = async () => {
+  TODAY_DATA["news"] = await getNextSchedule();
 };
 
 const getCompaniesJob = schedule.scheduleJob(
   "00 05 18 * * 1-5",
   getTodayCompany
 );
+
+const getWeeksNewsJob = schedule.scheduleJob("00 05 23 * * 6", getWeeksNews);
 
 const corsOptions = {
   origin: ["http://localhost:3000", "https://recomstock.netlify.app"],
@@ -29,8 +35,9 @@ app.use(cors(corsOptions));
 const returnJson = async (req, res) => {
   console.log("GET /data START");
 
-  if (TODAY_DATA.length === 0 && initFlag === false) {
+  if (initFlag === false) {
     getTodayCompany();
+    getWeeksNews();
     initFlag = true;
   }
   console.log("start send json");
@@ -40,7 +47,7 @@ const returnJson = async (req, res) => {
 };
 
 app.get("/data", returnJson);
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   res.send("hello");
 });
 
