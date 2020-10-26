@@ -1,6 +1,7 @@
 import express from "express";
 import { startSearching } from "./stockChecker";
 import { getNextSchedule } from "./getStockSchedule";
+import { realTimeSearch } from "./realTimeSearching";
 import cors from "cors";
 import schedule from "node-schedule";
 
@@ -12,17 +13,29 @@ let TODAY_DATA = {};
 let initFlag = false; // 처음 서버 실행할때
 
 const getTodayCompany = async () => {
-  TODAY_DATA["company"] = await startSearching();
+  delete TODAY_DATA.company;
+  TODAY_DATA.company = await startSearching();
 };
 const getWeeksNews = async () => {
-  TODAY_DATA["news"] = await getNextSchedule();
+  delete TODAY_DATA.news;
+  TODAY_DATA.news = await getNextSchedule();
 };
-
+// 실시간 검색
+const getRealTimeSearching = async () => {
+  delete TODAY_DATA.realTime;
+  TODAY_DATA.realTime = await realTimeSearch();
+};
+// 오늘 종목 스케쥴러
 const getCompaniesJob = schedule.scheduleJob(
   "00 05 18 * * 1-5",
   getTodayCompany
 );
-
+// 실시간 검색 스케쥴러
+const getRealTimeSearchingJob = schedule.scheduleJob(
+  "00 30 * * * 1-5",
+  getRealTimeSearching
+);
+// 다음주 일정 스케쥴러
 const getWeeksNewsJob = schedule.scheduleJob("00 05 23 * * 6", getWeeksNews);
 
 const corsOptions = {
@@ -38,10 +51,10 @@ const returnJson = async (req, res) => {
   if (initFlag === false) {
     getTodayCompany();
     getWeeksNews();
+    getRealTimeSearching();
     initFlag = true;
   }
   console.log("start send json");
-  console.log(`TODAY_DATA LENGTH: ${TODAY_DATA.length}`);
   res.json(TODAY_DATA);
   console.log("end send json");
 };
