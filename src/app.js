@@ -13,17 +13,26 @@ let TODAY_DATA = {};
 let initFlag = false; // 처음 서버 실행할때
 
 const getTodayCompany = async () => {
-  delete TODAY_DATA.company;
-  TODAY_DATA.company = await startSearching();
+  try {
+    TODAY_DATA.company = await startSearching();
+  } catch (err) {
+    console.log(`Error for getTodayCompany Func: ${err}`);
+  }
 };
 const getWeeksNews = async () => {
-  delete TODAY_DATA.news;
-  TODAY_DATA.news = await getNextSchedule();
+  try {
+    TODAY_DATA.news = await getNextSchedule();
+  } catch (err) {
+    console.log(`Error for getWeeksNews Func: ${err}`);
+  }
 };
 // 실시간 검색
 const getRealTimeSearching = async () => {
-  delete TODAY_DATA.realTime;
-  TODAY_DATA.realTime = await realTimeSearch();
+  try {
+    TODAY_DATA.realTime = await realTimeSearch();
+  } catch (err) {
+    console.log(`Error for getRealTimeSearching Func: ${err}`);
+  }
 };
 // 오늘 종목 스케쥴러
 const getCompaniesJob = schedule.scheduleJob(
@@ -32,11 +41,11 @@ const getCompaniesJob = schedule.scheduleJob(
 );
 // 실시간 검색 스케쥴러
 const getRealTimeSearchingJob = schedule.scheduleJob(
-  "00 30 * * * 1-5",
+  "00 10 * * * 1-5",
   getRealTimeSearching
 );
 // 다음주 일정 스케쥴러
-const getWeeksNewsJob = schedule.scheduleJob("00 05 23 * * 6", getWeeksNews);
+const getWeeksNewsJob = schedule.scheduleJob("00 05 23 * * 1-5", getWeeksNews);
 
 const corsOptions = {
   origin: ["http://localhost:3000", "https://recomstock.netlify.app"],

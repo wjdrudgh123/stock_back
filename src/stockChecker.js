@@ -32,6 +32,7 @@ const connectServer = async (url) => {
   const driver = await init();
   console.log("Start checkFallStock");
   await driver.get(url);
+  await driver.manage().window().maximize();
   return driver;
 };
 

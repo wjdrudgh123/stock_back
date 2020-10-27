@@ -57,6 +57,7 @@ const naverSearch = async () => {
 
   POPULAR_SEARCH.naver = naver;
   console.log("END NAVER REAL TIME SEARCHING");
+  await driver.quit();
 };
 
 const daumSearch = async () => {
@@ -86,4 +87,5 @@ const daumSearch = async () => {
 
   POPULAR_SEARCH.daum = daum;
   console.log("END DAUM REAL TIME SEARCHING");
+  await driver.quit();
 };
