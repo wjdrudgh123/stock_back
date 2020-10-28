@@ -28,8 +28,15 @@ const getWeeksNews = async () => {
 };
 // 실시간 검색
 const getRealTimeSearching = async () => {
+  const d = new Date();
+  const startTime = 7;
+  const finishTime = 19;
+  const currHour = d.getHours();
   try {
-    TODAY_DATA.realTime = await realTimeSearch();
+    // 아침 7시부터 저녁 7시까지 10분마다 실시간 조회
+    if (currHour >= startTime && currHour < finishTime) {
+      TODAY_DATA.realTime = await realTimeSearch();
+    }
   } catch (err) {
     console.log(`Error for getRealTimeSearching Func: ${err}`);
   }

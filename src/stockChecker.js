@@ -30,7 +30,7 @@ const init = async () => {
 
 const connectServer = async (url) => {
   const driver = await init();
-  console.log("Start checkFallStock");
+  console.log("Start Connect Server");
   await driver.get(url);
   await driver.manage().window().maximize();
   return driver;
@@ -60,11 +60,13 @@ const searchingSetting = async (url) => {
         By.xpath("//*[@id='contentarea_left']/div[2]/form/div/div/div/a[1]")
       )
     ).click(); // 적용하기 클릭
+    console.log("refresh");
+    await driver.navigate().refresh();
     // 다시 확인
     radioBtns = await checkSettingRadioBtn(driver, "click radio button");
-    console.log(radioBtns.per, radioBtns.trade);
+
     if (radioBtns.per === null && radioBtns.trade === "true") {
-      const trTag = await radioBtns.driver.findElements(
+      const trTag = await driver.findElements(
         By.xpath("//*[@id='contentarea']/div[3]/table/tbody/tr")
       );
       for (let i = 2; i < trTag.length; i++) {
@@ -75,7 +77,7 @@ const searchingSetting = async (url) => {
       }
     }
   }
-  await radioBtns.driver.quit();
+  await driver.quit();
   console.log(`LIST COUNT: ${companyNames.length}`);
   console.log(`FINISH GET PROPER COMPANY`);
   console.log(`CHECK COMPANY START`);
@@ -108,7 +110,7 @@ const checkSettingRadioBtn = async (driver, log) => {
     tradeRadio: chkLastTradeRadio,
     per: chkPerRadioAttr,
     trade: chkLastTradeRadioAttr,
-    driver: driver, // 확인할때 생긴 driver
+    //driver: driver, // 확인할때 생긴 driver
   };
 
   return returnValue;
@@ -117,7 +119,8 @@ const checkSettingRadioBtn = async (driver, log) => {
 const getProperCompany = async (tr) => {
   console.log(`GET PROPER COMPANY FUNC START`);
   /*
-    거래량 20% 차이나는 종목 확인
+    전일, 오늘 거래량 500,000 이상
+    1000원 이상 
   */
   const checkTr = await tr
     .findElement(By.xpath("./td[1]"))
@@ -125,28 +128,22 @@ const getProperCompany = async (tr) => {
 
   if (checkTr === "no") {
     const price = await tr.findElement(By.xpath("./td[3]")).getText();
-    const tmpUpDown = await tr.findElement(By.xpath("./td[5]")).getText(); // 하락률
-    const upDown = tmpUpDown.replace(/\%/g, "");
 
-    if (Number(price.replace(/\,/g, "")) > 1000 && Number(upDown) < -6.5) {
-      const lastTrade = await tr.findElement(By.xpath("./td[6]")).getText();
-      const todayTrade = await tr.findElement(By.xpath("./td[7]")).getText();
+    const lastTrade = await tr.findElement(By.xpath("./td[6]")).getText();
+    const todayTrade = await tr.findElement(By.xpath("./td[7]")).getText();
+    if (
+      Number(price.replace(/\,/g, "")) > 1000 &&
+      Number(todayTrade.replace(/\,/g, "")) > 500000 &&
+      Number(lastTrade.replace(/\,/g, "")) > 500000
+    ) {
+      const aTag = await tr.findElement(By.xpath("./td[2]/a"));
+      const name = await aTag.getText();
+      const url = await aTag.getAttribute("href");
 
-      const tradeRating =
-        ((Number(todayTrade.replace(/\,/g, "")) -
-          Number(lastTrade.replace(/\,/g, ""))) /
-          Number(todayTrade.replace(/\,/g, ""))) *
-        100;
-
-      if (tradeRating >= -30) {
-        const aTag = await tr.findElement(By.xpath("./td[2]/a"));
-        const name = await aTag.getText();
-        const url = await aTag.getAttribute("href");
-
-        if (validatorCompanyName(name)) {
-          return { name: name, url: url };
-        }
+      if (validatorCompanyName(name)) {
+        return { name: name, url: url };
       }
+      //}
     }
   }
   return false;
@@ -190,7 +187,7 @@ const checkCompany = async ({ name, url }) => {
   for (let i = 0; i < iframes.length; i++) {
     const iframeTitle = await iframes[i].getAttribute("title");
     if (iframeTitle === "일별 시세") {
-      console.log(`SWITCH FRAME`);
+      console.log(`${name}기업 SWITCH FRAME`);
       // iframe으로 스위치
       await driver.switchTo().frame(iframes[i]);
       const marketPrices = await driver.wait(
@@ -210,8 +207,8 @@ const checkCompany = async ({ name, url }) => {
           By.xpath("/html/body/table[1]/tbody/tr[3]/td[2]/span")
         )
       ).getText();
-      const todayLastPrice = Number(tmpTodayLastPrice.replace(/\,/g, ""));
-      const todayLowPrice = Number(tmpTodayLowPrice.replace(/\,/g, ""));
+      const todayLastPrice = Number(tmpTodayLastPrice.replace(/\,/g, "")); // 당일 저가
+      const todayLowPrice = Number(tmpTodayLowPrice.replace(/\,/g, "")); // 당일 종가
 
       for (let j = 2; j < 5; j++) {
         const checkPricePoll = await marketPrices[j]
@@ -246,12 +243,12 @@ const checkCompany = async ({ name, url }) => {
           const upDownRate = ((endPrice - startPrice) / startPrice) * 100;
           const middle = (lowPrice + highPrice) / 2;
 
-          if (upDownRate > 12) {
+          if (upDownRate >= 25) {
             if (todayLastPrice >= middle) {
               await driver.quit();
               return {
                 name: name,
-                lowPrice: lowPrice,
+                lowPrice: todayLastPrice,
                 todayLow: todayLowPrice,
               };
             }
