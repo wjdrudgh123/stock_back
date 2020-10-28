@@ -36,6 +36,8 @@ const getRealTimeSearching = async () => {
     // 아침 7시부터 저녁 7시까지 10분마다 실시간 조회
     if (currHour >= startTime && currHour < finishTime) {
       TODAY_DATA.realTime = await realTimeSearch();
+    } else {
+      TODAY_DATA.realTime = "timeout";
     }
   } catch (err) {
     console.log(`Error for getRealTimeSearching Func: ${err}`);
