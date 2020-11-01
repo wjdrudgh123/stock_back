@@ -1,7 +1,7 @@
 import express from "express";
-import { startSearching } from "./stockChecker";
 import { getNextSchedule } from "./getStockSchedule";
 import { realTimeSearch } from "./realTimeSearching";
+import { checker } from "./companyChecker";
 import cors from "cors";
 import schedule from "node-schedule";
 
@@ -14,13 +14,15 @@ let initFlag = false; // 처음 서버 실행할때
 
 const getTodayCompany = async () => {
   try {
-    TODAY_DATA.company = await startSearching();
+    TODAY_DATA.company = [];
+    TODAY_DATA.company = await checker();
   } catch (err) {
     console.log(`Error for getTodayCompany Func: ${err}`);
   }
 };
 const getWeeksNews = async () => {
   try {
+    TODAY_DATA.news = [];
     TODAY_DATA.news = await getNextSchedule();
   } catch (err) {
     console.log(`Error for getWeeksNews Func: ${err}`);
