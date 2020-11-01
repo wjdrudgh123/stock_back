@@ -144,71 +144,6 @@ const checkCompanyPrice = async (companies) => {
       const price = await temp.getText();
       lastPrices.push(Number(price.replace(/\,/g, "")));
     }
-    const nextPage = await driver.wait(
-      until.elementLocated(
-        By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/div/a[1]")
-      ),
-      30000,
-      "Timed out after 10 seconds",
-      5000
-    );
-    await nextPage.click();
-
-    try {
-      const twoPageTable = await driver.wait(
-        until.elementsLocated(
-          By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-        ),
-        30000,
-        "Timed out after 10 seconds",
-        5000
-      );
-
-      for (let i = 0; i < twoPageTable.length; i++) {
-        const temp = await driver.wait(
-          until.elementLocated(
-            By.xpath(
-              `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-                i + 1
-              }]/td[5]/span`
-            )
-          ),
-          30000,
-          "Timed out after 10 seconds",
-          5000
-        );
-        const price = await temp.getText();
-        lastPrices.push(Number(price.replace(/\,/g, "")));
-      }
-    } catch (err) {
-      console.log(`Too fast find element: ${err}`);
-    } finally {
-      const twoPageTable = await driver.wait(
-        until.elementsLocated(
-          By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-        ),
-        30000,
-        "Timed out after 10 seconds",
-        5000
-      );
-
-      for (let i = 0; i < twoPageTable.length; i++) {
-        const temp = await driver.wait(
-          until.elementLocated(
-            By.xpath(
-              `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-                i + 1
-              }]/td[5]/span`
-            )
-          ),
-          30000,
-          "Timed out after 10 seconds",
-          5000
-        );
-        const price = await temp.getText();
-        lastPrices.push(Number(price.replace(/\,/g, "")));
-      }
-    }
 
     const chkPrice = await calculator(lastPrices);
     if (chkPrice) {
@@ -224,19 +159,19 @@ const calculator = (price) => {
   /**
    * 5일선
    *
-   * 20일선
+   * 10일선
    */
   let five = 0;
-  let twenty = 0;
+  let ten = 0;
   for (let i = 0; i < 5; i++) {
     five += price[i];
   }
   for (let j = 0; j < price.length; j++) {
-    twenty += price[j];
+    ten += price[j];
   }
   if (
-    price[0] > Math.floor(twenty / 20) &&
-    Math.floor(five / 5) > Math.floor(twenty / 20)
+    price[0] > Math.floor(ten / 10) &&
+    Math.floor(five / 5) > Math.floor(ten / 10)
   ) {
     return true;
   }
