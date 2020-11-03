@@ -160,6 +160,7 @@ const calculator = (price) => {
    * 5일선
    *
    * 10일선
+   * 어제 종가가 10일선 밑이거나 같음
    */
   let five = 0;
   let ten = 0;
@@ -171,6 +172,7 @@ const calculator = (price) => {
   }
   if (
     price[0] > Math.floor(ten / 10) &&
+    price[1] <= Math.floor(ten / 10) &&
     Math.floor(five / 5) > Math.floor(ten / 10)
   ) {
     return true;
