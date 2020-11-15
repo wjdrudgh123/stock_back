@@ -3,11 +3,13 @@ import chrome, { ServiceBuilder } from "selenium-webdriver/chrome";
 import path from "path";
 
 /*
-    20이평 위를 15%이상 장대양봉으로 뚫는 종목
+  5이평 밑에 있다가 5이평 뚫는 5퍼 이상 종목??
 */
 
-const URL_KOSPI = "http://finance.daum.net/domestic/rise_stocks?market=KOSPI";
-const URL_KOSDAQ = "http://finance.daum.net/domestic/rise_stocks?market=KOSDAQ";
+const URL_KOSPI =
+  "https://m.stock.naver.com/sise/siseList.nhn?menu=rise&sosok=0";
+const URL_KOSDAQ =
+  "https://m.stock.naver.com/sise/siseList.nhn?menu=rise&sosok=1";
 let FINAL_PICK = [];
 
 const init = async () => {
@@ -33,6 +35,10 @@ const connectServer = async (url) => {
   console.log("Start Connect Server");
   await driver.get(url);
   await driver.manage().window().maximize();
+  // await driver
+  //   .manage()
+  //   .setTimeouts({ implicit: 30000, pageLoad: 30000, script: 30000 });
+  // await driver.manage().getTimeouts();
   return driver;
 };
 
@@ -67,31 +73,61 @@ const getCompanyName = async (flag) => {
   const driver = await connectServer(url);
   const tableTr = await driver.wait(
     until.elementsLocated(
-      By.xpath("//*[@id='boxRiseStocks']/div[2]/div[1]/table/tbody/tr")
-    ),
-    10000
+      By.xpath("//*[@id='content']/div/div[2]/div[2]/table/tbody/tr"),
+      10000
+    )
   );
+
   let companiesInfo = [];
   for (let i = 0; i < tableTr.length; i++) {
+    const getAttr = await tableTr[i].getAttribute("onclick");
+    const items = getAttr.split(";");
+    const itemNo = items[1].split("'");
+
+    const urlLink = `https://m.stock.naver.com/item/main.nhn#/stocks/${itemNo[1]}/total`;
     const upDownRate = await (
-      await tableTr[i].findElement(By.xpath("./td[5]/span"))
+      await tableTr[i].findElement(By.xpath("./td[4]/span/span"))
     ).getText();
     const onlyNum = Number(upDownRate.replace(/[+%]/g, ""));
-    const tradeRate = await (
-      await tableTr[i].findElement(By.xpath("./td[6]/span"))
-    ).getText();
-    const trade = Number(tradeRate.replace(/\,/g, ""));
-    // 14.5%이상 상승 + 거래량 50만 이상
-    if (onlyNum >= 14.5 && trade >= 500000) {
-      const aTag = await await tableTr[i].findElement(By.xpath("./td[2]/a"));
-      const companyName = await aTag.getText();
-      const link = await aTag.getAttribute("href");
+
+    // 5%이상 상승
+    if (onlyNum >= 5) {
+      const span = await tableTr[i].findElement(By.xpath("./td[1]/span"));
+      const companyName = await span.getText();
       if (validatorCompanyName(companyName)) {
-        companiesInfo.push({ name: companyName, link: link });
+        companiesInfo.push({ name: companyName, link: urlLink });
       }
     }
   }
   await driver.quit();
+
+  // const tableTr = await driver.wait(
+  //   until.elementsLocated(
+  //     By.xpath("//*[@id='boxRiseStocks']/div[2]/div[1]/table/tbody/tr")
+  //   ),
+  //   10000
+  // );
+  // let companiesInfo = [];
+  // for (let i = 0; i < tableTr.length; i++) {
+  //   const upDownRate = await (
+  //     await tableTr[i].findElement(By.xpath("./td[5]/span"))
+  //   ).getText();
+  //   const onlyNum = Number(upDownRate.replace(/[+%]/g, ""));
+  //   const tradeRate = await (
+  //     await tableTr[i].findElement(By.xpath("./td[6]/span"))
+  //   ).getText();
+  //   const trade = Number(tradeRate.replace(/\,/g, ""));
+  //   // 14.5%이상 상승 + 거래량 50만 이상
+  //   if (onlyNum >= 14.5 && trade >= 500000) {
+  //     const aTag = await await tableTr[i].findElement(By.xpath("./td[2]/a"));
+  //     const companyName = await aTag.getText();
+  //     const link = await aTag.getAttribute("href");
+  //     if (validatorCompanyName(companyName)) {
+  //       companiesInfo.push({ name: companyName, link: link });
+  //     }
+  //   }
+  // }
+  //await driver.quit();
   return companiesInfo;
 };
 
@@ -110,48 +146,108 @@ const checkCompanyPrice = async (companies) => {
 
     const driver = await connectServer(link);
 
-    const curPriceBtn = await driver.wait(
-      until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
-      30000,
-      "Timed out after 10 seconds",
-      5000
+    const chkLoading = await driver.wait(
+      until.elementLocated(
+        By.xpath("//*[@id='content_body']/div[1]/ul/li[1]/div"),
+        10000
+      )
     );
-    await curPriceBtn.click();
+    //console.log(await chkLoading.getText());
+    const navBtn = await driver.wait(
+      until.elementLocated(By.xpath("//*[@id='content']/nav/ul/li[1]"), 10000)
+    );
+    await driver.actions().click(navBtn).perform();
+    // 5일선 아래 -> 5일선 위 종가 마감
 
-    const lastPrices = [];
-    const firstPageTable = await driver.wait(
+    await driver.actions().sendKeys(Key.TAB).perform();
+    await driver.actions().sendKeys(Key.TAB).perform();
+    await driver.actions().sendKeys(Key.TAB).perform();
+    //await driver.actions().sendKeys(Key.TAB).perform();
+    await driver.actions().sendKeys(Key.ENTER).perform();
+    //await navBtn.click();
+    //await driver.actions().click(navBtn).perform();
+    //await driver.executeScript("arguments[0].click();", navBtn);
+    const tableTr = await driver.wait(
       until.elementsLocated(
-        By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-      ),
-      30000,
-      "Timed out after 10 seconds",
-      5000
+        By.xpath("//*[@id='content_body']/table/tbody/tr"),
+        10000
+      )
     );
 
-    for (let i = 0; i < firstPageTable.length; i++) {
-      const temp = await driver.wait(
-        until.elementLocated(
-          By.xpath(
-            `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-              i + 1
-            }]/td[5]/span`
-          )
-        ),
-        30000,
-        "Timed out after 10 seconds",
-        5000
-      );
-      const price = await temp.getText();
-      lastPrices.push(Number(price.replace(/\,/g, "")));
+    const todayLastPrice = 0;
+    const yesterdayPrice = 0;
+    const sum = 0;
+    const firstNum = 0; // 오늘 기준 5일 이평
+    const lastNum = 0; // 어제 기준 5일이평
+
+    for (let j = 0; j < 6; j++) {
+      const lastPrice = await (
+        await tableTr[j].findElement(By.xpath("./td[2]/span"))
+      ).getText();
+      const numberPrice = Number(lastPrice.replace(/\,/g, ""));
+      if (j === 0) {
+        todayLastPrice = numberPrice;
+        firstNum = numberPrice;
+      } else if (j === 1) {
+        yesterdayPrice = numberPrice;
+      } else if (j === 5) {
+        lastNum = numberPrice;
+      }
+
+      sum += numberPrice;
     }
 
-    const chkPrice = await calculator(lastPrices);
-    if (chkPrice) {
+    const fiveLine = (sum - lastNum) / 5;
+    const fiveLine2 = (sum - firstNum) / 5;
+
+    if (yesterdayPrice <= fiveLine2 && todayLastPrice > fiveLine) {
+      console.log(name);
       company.push({ name: name });
     }
 
+    // const curPriceBtn = await driver.wait(
+    //   until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
+    //   30000,
+    //   "Timed out after 10 seconds",
+    //   5000
+    // );
+    // await curPriceBtn.click();
+
+    // const lastPrices = [];
+    // const firstPageTable = await driver.wait(
+    //   until.elementsLocated(
+    //     By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
+    //   ),
+    //   30000,
+    //   "Timed out after 10 seconds",
+    //   5000
+    // );
+
+    // for (let i = 0; i < firstPageTable.length; i++) {
+    //   const temp = await driver.wait(
+    //     until.elementLocated(
+    //       By.xpath(
+    //         `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
+    //           i + 1
+    //         }]/td[5]/span`
+    //       )
+    //     ),
+    //     30000,
+    //     "Timed out after 10 seconds",
+    //     5000
+    //   );
+    //   const price = await temp.getText();
+    //   lastPrices.push(Number(price.replace(/\,/g, "")));
+    // }
+
+    // const chkPrice = await calculator(lastPrices);
+    // if (chkPrice) {
+    //   company.push({ name: name });
+    // }
+
     await driver.quit();
   }
+  console.log(company);
   return company;
 };
 
