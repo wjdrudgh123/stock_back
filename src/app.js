@@ -39,12 +39,13 @@ const getRealTimeSearching = async () => {
   const currHour = d.getHours();
   try {
     // 아침 7시부터 저녁 7시까지 10분마다 실시간 조회
-    if (currHour >= startTime && currHour < finishTime) {
-      TODAY_DATA.realTime = [];
-      TODAY_DATA.realTime = await realTimeSearch();
-    } else {
-      TODAY_DATA.realTime = "timeout";
-    }
+    //if (currHour >= startTime && currHour < finishTime) {
+    TODAY_DATA.realTime = [];
+    TODAY_DATA.realTime = await realTimeSearch();
+    //}
+    // else {
+    //   TODAY_DATA.realTime = "timeout";
+    // }
   } catch (err) {
     console.log(`Error for getRealTimeSearching Func: ${err}`);
   }
@@ -98,7 +99,7 @@ const getRssNews = async () => {
 
 // 오늘 종목 스케쥴러
 const getCompaniesJob = schedule.scheduleJob(
-  "00 05 18 * * 1-5",
+  "00 05 16 * * 1-5",
   getTodayCompany
 );
 // 실시간 검색 스케쥴러
