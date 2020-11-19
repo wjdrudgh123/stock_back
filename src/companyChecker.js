@@ -179,8 +179,8 @@ const checkCompanyPrice = async (companies) => {
     const sum = 0;
     const firstNum = 0; // 오늘 기준 5일 이평
     const lastNum = 0; // 어제 기준 5일이평
-
-    for (let j = 0; j < 6; j++) {
+    const twentyNum = 0;
+    for (let j = 0; j < tableTr.length; j++) {
       const lastPrice = await (
         await tableTr[j].findElement(By.xpath("./td[2]/span"))
       ).getText();
@@ -193,14 +193,21 @@ const checkCompanyPrice = async (companies) => {
       } else if (j === 5) {
         lastNum = numberPrice;
       }
-
-      sum += numberPrice;
+      if (j < 6) {
+        sum += numberPrice;
+      }
+      twentyNum += numberPrice;
     }
 
     const fiveLine = (sum - lastNum) / 5;
     const fiveLine2 = (sum - firstNum) / 5;
+    const twentyLine = Math.floor(twentyNum / 20);
 
-    if (yesterdayPrice <= fiveLine2 && todayLastPrice > fiveLine) {
+    if (
+      yesterdayPrice <= fiveLine2 &&
+      todayLastPrice > fiveLine &&
+      todayLastPrice > twentyLine
+    ) {
       console.log(name);
       company.push({ name: name });
     }

@@ -76,6 +76,7 @@ const getRSS = async (urls) => {
         headline[broadCast[i]] = item;
         broadCasts.push(headline);
       }
+      console.log(`Rss News: ${broadCasts}`);
       TODAY_DATA["news"] = broadCasts;
     });
   }
@@ -99,7 +100,7 @@ const getRssNews = async () => {
 
 // 오늘 종목 스케쥴러
 const getCompaniesJob = schedule.scheduleJob(
-  "00 05 16 * * 1-5",
+  "00 05 18 * * 1-5",
   getTodayCompany
 );
 // 실시간 검색 스케쥴러
@@ -114,7 +115,7 @@ const getWeeksNewsJob = schedule.scheduleJob(
 );
 
 // RSS 스케쥴러
-const getRssJob = schedule.scheduleJob("00 00 */1 * * 1-5", getRssNews);
+const getRssJob = schedule.scheduleJob("00 00 */1 * * *", getRssNews);
 const corsOptions = {
   origin: ["http://localhost:3000", "https://recomstock.netlify.app"],
   credentials: true,
@@ -140,7 +141,7 @@ const returnJson = async (req, res) => {
 
 app.get("/data", returnJson);
 app.get("/", async (req, res) => {
-  await getTodayCompany();
+  //await getTodayCompany();
   res.send("hello");
   //res.send(await getRSS());
 });
