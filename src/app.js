@@ -84,9 +84,8 @@ const getRSS = async (urls) => {
 
 const getRssNews = async () => {
   let urls = [];
-  const YONHAP_NEWS =
-    "https://www.yonhapnewstv.co.kr/category/news/economy/feed/";
-  const HANGYEONG_NEWS = "http://rss.hankyung.com/new/news_economy.xml";
+  const YONHAP_NEWS = "http://www.yonhapnewstv.co.kr/browse/feed/";
+  const HANGYEONG_NEWS = "http://rss.hankyung.com/new/news_main.xml";
   const CHOSUN_NEWS = "https://biz.chosun.com/site/data/rss/rss.xml";
   const DONGA_NEWS = "https://rss.donga.com/economy.xml";
   urls.push(YONHAP_NEWS, HANGYEONG_NEWS, CHOSUN_NEWS, DONGA_NEWS);

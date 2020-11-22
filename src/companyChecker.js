@@ -6,10 +6,8 @@ import path from "path";
   5이평 밑에 있다가 5이평 뚫는 5퍼 이상 종목??
 */
 
-const URL_KOSPI =
-  "https://m.stock.naver.com/sise/siseList.nhn?menu=rise&sosok=0";
-const URL_KOSDAQ =
-  "https://m.stock.naver.com/sise/siseList.nhn?menu=rise&sosok=1";
+const URL_KOSPI = "https://finance.naver.com/sise/sise_quant_low.nhn?sosok=0";
+const URL_KOSDAQ = "https://finance.naver.com/sise/sise_quant_low.nhn?sosok=1";
 let FINAL_PICK = [];
 
 const init = async () => {
@@ -32,13 +30,8 @@ const init = async () => {
 
 const connectServer = async (url) => {
   const driver = await init();
-  console.log("Start Connect Server");
   await driver.get(url);
   await driver.manage().window().maximize();
-  // await driver
-  //   .manage()
-  //   .setTimeouts({ implicit: 30000, pageLoad: 30000, script: 30000 });
-  // await driver.manage().getTimeouts();
   return driver;
 };
 
@@ -56,7 +49,9 @@ const validatorCompanyName = (name) => {
     name.indexOf("호스팩") !== -1 ||
     name.indexOf("(전환)") !== -1 ||
     name.indexOf("3호") !== -1 ||
-    name.indexOf("ETN") !== -1
+    name.indexOf("ETN") !== -1 ||
+    name.indexOf("ARIRANG") !== -1 ||
+    name.indexOf("KBSTAR") !== -1
   ) {
     return false;
   }
@@ -64,6 +59,7 @@ const validatorCompanyName = (name) => {
 };
 
 const getCompanyName = async (flag) => {
+  console.log("Start GetCompanyName Func");
   let url = "";
   if (flag === 1) {
     url = URL_KOSPI;
@@ -73,61 +69,41 @@ const getCompanyName = async (flag) => {
   const driver = await connectServer(url);
   const tableTr = await driver.wait(
     until.elementsLocated(
-      By.xpath("//*[@id='content']/div/div[2]/div[2]/table/tbody/tr"),
+      By.xpath("//*[@id='contentarea']/div[3]/table/tbody/tr"),
       10000
     )
   );
 
   let companiesInfo = [];
-  for (let i = 0; i < tableTr.length; i++) {
-    const getAttr = await tableTr[i].getAttribute("onclick");
-    const items = getAttr.split(";");
-    const itemNo = items[1].split("'");
-
-    const urlLink = `https://m.stock.naver.com/item/main.nhn#/stocks/${itemNo[1]}/total`;
-    const upDownRate = await (
-      await tableTr[i].findElement(By.xpath("./td[4]/span/span"))
+  for (let i = 1; i < tableTr.length; i++) {
+    const isCont = await (
+      await tableTr[i].findElement(By.xpath("./td[1]"))
+    ).getAttribute("class");
+    if (isCont !== "no") {
+      continue;
+    }
+    const lastTrade = await (
+      await tableTr[i].findElement(By.xpath("./td[10]"))
     ).getText();
-    const onlyNum = Number(upDownRate.replace(/[+%]/g, ""));
-
-    // 5%이상 상승
-    if (onlyNum >= 5) {
-      const span = await tableTr[i].findElement(By.xpath("./td[1]/span"));
-      const companyName = await span.getText();
+    const trade = await (
+      await tableTr[i].findElement(By.xpath("./td[9]"))
+    ).getText();
+    const tradeNum = Number(trade.replace(/\,/g, ""));
+    const lastTradeNum = Number(lastTrade.replace(/\,/g, ""));
+    const rate = Math.floor(((tradeNum - lastTradeNum) / lastTradeNum) * 100);
+    // 전일 거래량 1000만이상
+    if (lastTradeNum >= 10000000 && rate <= -25) {
+      const aTag = await tableTr[i].findElement(By.xpath("./td[3]/a"));
+      const companyName = await aTag.getText();
+      const urlLink = await aTag.getAttribute("href");
+      const companyCode = urlLink.split("=");
       if (validatorCompanyName(companyName)) {
-        companiesInfo.push({ name: companyName, link: urlLink });
+        companiesInfo.push({ name: companyName, code: companyCode[1] });
       }
     }
   }
   await driver.quit();
-
-  // const tableTr = await driver.wait(
-  //   until.elementsLocated(
-  //     By.xpath("//*[@id='boxRiseStocks']/div[2]/div[1]/table/tbody/tr")
-  //   ),
-  //   10000
-  // );
-  // let companiesInfo = [];
-  // for (let i = 0; i < tableTr.length; i++) {
-  //   const upDownRate = await (
-  //     await tableTr[i].findElement(By.xpath("./td[5]/span"))
-  //   ).getText();
-  //   const onlyNum = Number(upDownRate.replace(/[+%]/g, ""));
-  //   const tradeRate = await (
-  //     await tableTr[i].findElement(By.xpath("./td[6]/span"))
-  //   ).getText();
-  //   const trade = Number(tradeRate.replace(/\,/g, ""));
-  //   // 14.5%이상 상승 + 거래량 50만 이상
-  //   if (onlyNum >= 14.5 && trade >= 500000) {
-  //     const aTag = await await tableTr[i].findElement(By.xpath("./td[2]/a"));
-  //     const companyName = await aTag.getText();
-  //     const link = await aTag.getAttribute("href");
-  //     if (validatorCompanyName(companyName)) {
-  //       companiesInfo.push({ name: companyName, link: link });
-  //     }
-  //   }
-  // }
-  //await driver.quit();
+  console.log("End GetCompanyName Func");
   return companiesInfo;
 };
 
@@ -142,10 +118,10 @@ const gatherCompany = async () => {
 const checkCompanyPrice = async (companies) => {
   let company = [];
   for (let i = 0; i < companies.length; i++) {
-    const { name, link } = companies[i];
+    const { name, code } = companies[i];
+    const urlLink = `https://m.stock.naver.com/item/main.nhn#/stocks/${code}/total`;
 
-    const driver = await connectServer(link);
-
+    const driver = await connectServer(urlLink);
     const chkLoading = await driver.wait(
       until.elementLocated(
         By.xpath("//*[@id='content_body']/div[1]/ul/li[1]/div"),
@@ -157,7 +133,6 @@ const checkCompanyPrice = async (companies) => {
       until.elementLocated(By.xpath("//*[@id='content']/nav/ul/li[1]"), 10000)
     );
     await driver.actions().click(navBtn).perform();
-    // 5일선 아래 -> 5일선 위 종가 마감
 
     await driver.actions().sendKeys(Key.TAB).perform();
     await driver.actions().sendKeys(Key.TAB).perform();
@@ -173,119 +148,49 @@ const checkCompanyPrice = async (companies) => {
         10000
       )
     );
-
-    const todayLastPrice = 0;
-    const yesterdayPrice = 0;
-    const sum = 0;
-    const firstNum = 0; // 오늘 기준 5일 이평
-    const lastNum = 0; // 어제 기준 5일이평
-    const twentyNum = 0;
-    for (let j = 0; j < tableTr.length; j++) {
-      const lastPrice = await (
-        await tableTr[j].findElement(By.xpath("./td[2]/span"))
-      ).getText();
-      const numberPrice = Number(lastPrice.replace(/\,/g, ""));
-      if (j === 0) {
-        todayLastPrice = numberPrice;
-        firstNum = numberPrice;
-      } else if (j === 1) {
-        yesterdayPrice = numberPrice;
-      } else if (j === 5) {
-        lastNum = numberPrice;
-      }
-      if (j < 6) {
+    const downFinder = await (
+      await tableTr[0].findElement(By.xpath("./td[3]"))
+    ).getAttribute("class");
+    if (downFinder.indexOf("stock_dn")) {
+      let todayLastPrice = 0;
+      let lowPrice = 0;
+      let sum = 0;
+      // 전날 거래량 1000만 이상을 찾았으니 당일 음봉
+      for (let i = 0; i < 5; i++) {
+        const lastPrice = await (
+          await tableTr[i].findElement(By.xpath("./td[2]/span"))
+        ).getText();
+        const numberPrice = Number(lastPrice.replace(/\,/g, ""));
+        if (i === 0) {
+          const low = await (
+            await tableTr[i].findElement(By.xpath("./td[7]/span"))
+          ).getText();
+          const numLowPrice = Number(low.replace(/\,/g, ""));
+          todayLastPrice = numberPrice;
+          lowPrice = numLowPrice;
+        }
         sum += numberPrice;
       }
-      twentyNum += numberPrice;
+
+      const fiveLine = sum / 5;
+
+      if (
+        todayLastPrice > fiveLine &&
+        (lowPrice >= fiveLine + 100 || lowPrice >= fiveLine - 100)
+      ) {
+        company.push({ name: name });
+      }
     }
-
-    const fiveLine = (sum - lastNum) / 5;
-    const fiveLine2 = (sum - firstNum) / 5;
-    const twentyLine = Math.floor(twentyNum / 20);
-
-    if (
-      yesterdayPrice <= fiveLine2 &&
-      todayLastPrice > fiveLine &&
-      todayLastPrice > twentyLine
-    ) {
-      console.log(name);
-      company.push({ name: name });
-    }
-
-    // const curPriceBtn = await driver.wait(
-    //   until.elementLocated(By.xpath("//*[@id='boxTabs']/td[2]/a")),
-    //   30000,
-    //   "Timed out after 10 seconds",
-    //   5000
-    // );
-    // await curPriceBtn.click();
-
-    // const lastPrices = [];
-    // const firstPageTable = await driver.wait(
-    //   until.elementsLocated(
-    //     By.xpath("//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr")
-    //   ),
-    //   30000,
-    //   "Timed out after 10 seconds",
-    //   5000
-    // );
-
-    // for (let i = 0; i < firstPageTable.length; i++) {
-    //   const temp = await driver.wait(
-    //     until.elementLocated(
-    //       By.xpath(
-    //         `//*[@id='boxDayHistory']/div/div[2]/div/table/tbody/tr[${
-    //           i + 1
-    //         }]/td[5]/span`
-    //       )
-    //     ),
-    //     30000,
-    //     "Timed out after 10 seconds",
-    //     5000
-    //   );
-    //   const price = await temp.getText();
-    //   lastPrices.push(Number(price.replace(/\,/g, "")));
-    // }
-
-    // const chkPrice = await calculator(lastPrices);
-    // if (chkPrice) {
-    //   company.push({ name: name });
-    // }
-
     await driver.quit();
   }
-  console.log(company);
   return company;
-};
-
-const calculator = (price) => {
-  /**
-   * 5일선
-   *
-   * 10일선
-   * 어제 종가가 10일선 밑이거나 같음
-   */
-  let five = 0;
-  let ten = 0;
-  for (let i = 0; i < 5; i++) {
-    five += price[i];
-  }
-  for (let j = 0; j < price.length; j++) {
-    ten += price[j];
-  }
-  if (
-    price[0] > Math.floor(ten / 10) &&
-    price[1] <= Math.floor(ten / 10) &&
-    Math.floor(five / 5) > Math.floor(ten / 10)
-  ) {
-    return true;
-  }
-  return false;
 };
 
 export const checker = async () => {
   const companies = await gatherCompany();
   FINAL_PICK = await checkCompanyPrice(companies);
+  console.log(`------------END Checker----------------`);
   console.log(FINAL_PICK);
+  console.log(`---------------------------------------`);
   return FINAL_PICK;
 };
