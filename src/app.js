@@ -104,7 +104,7 @@ const getCompaniesJob = schedule.scheduleJob(
 );
 // 실시간 검색 스케쥴러
 const getRealTimeSearchingJob = schedule.scheduleJob(
-  "00 10 * * * 1-5",
+  "00 */10 * * * 1-5",
   getRealTimeSearching
 );
 // 다음주 일정 스케쥴러

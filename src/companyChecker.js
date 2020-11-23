@@ -76,6 +76,7 @@ const getCompanyName = async (flag) => {
 
   let companiesInfo = [];
   for (let i = 1; i < tableTr.length; i++) {
+    await driver.manage().setTimeouts({ implicit: 3000 });
     const isCont = await (
       await tableTr[i].findElement(By.xpath("./td[1]"))
     ).getAttribute("class");
@@ -90,9 +91,10 @@ const getCompanyName = async (flag) => {
     ).getText();
     const tradeNum = Number(trade.replace(/\,/g, ""));
     const lastTradeNum = Number(lastTrade.replace(/\,/g, ""));
+    // ( 오늘 거래량 - 어제 거래량 ) / 어제 거래량 * 100
     const rate = Math.floor(((tradeNum - lastTradeNum) / lastTradeNum) * 100);
-    // 전일 거래량 1000만이상
-    if (lastTradeNum >= 10000000 && rate <= -25) {
+    // 전일 거래량 1000만이상 && 급락한 종목
+    if (lastTradeNum >= 10000000 && rate <= -60) {
       const aTag = await tableTr[i].findElement(By.xpath("./td[3]/a"));
       const companyName = await aTag.getText();
       const urlLink = await aTag.getAttribute("href");
@@ -110,6 +112,7 @@ const getCompanyName = async (flag) => {
 const gatherCompany = async () => {
   let allCompany = [];
   const kospi = await getCompanyName(1);
+  await driver.manage().setTimeouts({ implicit: 3000 });
   const kosdaq = await getCompanyName(2);
   allCompany = kospi.concat(kosdaq);
   return allCompany;
@@ -118,6 +121,7 @@ const gatherCompany = async () => {
 const checkCompanyPrice = async (companies) => {
   let company = [];
   for (let i = 0; i < companies.length; i++) {
+    await driver.manage().setTimeouts({ implicit: 3000 });
     const { name, code } = companies[i];
     const urlLink = `https://m.stock.naver.com/item/main.nhn#/stocks/${code}/total`;
 
@@ -151,7 +155,7 @@ const checkCompanyPrice = async (companies) => {
     const downFinder = await (
       await tableTr[0].findElement(By.xpath("./td[3]"))
     ).getAttribute("class");
-    if (downFinder.indexOf("stock_dn")) {
+    if (downFinder.indexOf("stock_dn") !== -1) {
       let todayLastPrice = 0;
       let lowPrice = 0;
       let sum = 0;
