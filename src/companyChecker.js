@@ -112,7 +112,6 @@ const getCompanyName = async (flag) => {
 const gatherCompany = async () => {
   let allCompany = [];
   const kospi = await getCompanyName(1);
-  await driver.manage().setTimeouts({ implicit: 3000 });
   const kosdaq = await getCompanyName(2);
   allCompany = kospi.concat(kosdaq);
   return allCompany;
@@ -121,7 +120,6 @@ const gatherCompany = async () => {
 const checkCompanyPrice = async (companies) => {
   let company = [];
   for (let i = 0; i < companies.length; i++) {
-    await driver.manage().setTimeouts({ implicit: 3000 });
     const { name, code } = companies[i];
     const urlLink = `https://m.stock.naver.com/item/main.nhn#/stocks/${code}/total`;
 
@@ -132,6 +130,7 @@ const checkCompanyPrice = async (companies) => {
         10000
       )
     );
+    await driver.manage().setTimeouts({ implicit: 3000 });
     //console.log(await chkLoading.getText());
     const navBtn = await driver.wait(
       until.elementLocated(By.xpath("//*[@id='content']/nav/ul/li[1]"), 10000)
