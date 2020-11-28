@@ -56,7 +56,7 @@ const getRSS = async (urls) => {
   let broadCasts = [];
   for (let i = 0; i < urls.length; i++) {
     await request.get(urls[i], async (err, res, body) => {
-      const broadCast = ["yonhap", "hangyeong", "chosun", "donga"];
+      const broadCast = ["yonhap", "hangyeong", "chosun", "donga", "joongang"];
 
       if (err) {
         console.log(`GET NEWS RSS ERR: ${err}`);
@@ -85,10 +85,17 @@ const getRSS = async (urls) => {
 const getRssNews = async () => {
   let urls = [];
   const YONHAP_NEWS = "http://www.yonhapnewstv.co.kr/browse/feed/";
-  const HANGYEONG_NEWS = "http://rss.hankyung.com/new/news_main.xml";
+  const HANGYEONG_NEWS = "http://rss.hankyung.com/new/news_economy.xml";
   const CHOSUN_NEWS = "https://biz.chosun.com/site/data/rss/rss.xml";
-  const DONGA_NEWS = "https://rss.donga.com/economy.xml";
-  urls.push(YONHAP_NEWS, HANGYEONG_NEWS, CHOSUN_NEWS, DONGA_NEWS);
+  const DONGA_NEWS = "https://rss.donga.com/total.xml";
+  const JOONGANG_NEWS = "https://rss.joins.com/joins_news_list.xml";
+  urls.push(
+    YONHAP_NEWS,
+    HANGYEONG_NEWS,
+    CHOSUN_NEWS,
+    DONGA_NEWS,
+    JOONGANG_NEWS
+  );
   try {
     TODAY_DATA.news = [];
     TODAY_DATA.news = await getRSS(urls);
