@@ -158,30 +158,44 @@ const checkCompanyPrice = async (companies) => {
       let todayLastPrice = 0;
       let lowPrice = 0;
       let sum = 0;
+      let fiveLine = 0;
+
+      let isCoinItem = false;
+
       // 전날 거래량 1000만 이상을 찾았으니 당일 음봉
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 8; i++) {
         const lastPrice = await (
           await tableTr[i].findElement(By.xpath("./td[2]/span"))
-        ).getText();
+        ).getText(); // 종가
         const numberPrice = Number(lastPrice.replace(/\,/g, ""));
         if (i === 0) {
           const low = await (
             await tableTr[i].findElement(By.xpath("./td[7]/span"))
-          ).getText();
+          ).getText(); // 저가
           const numLowPrice = Number(low.replace(/\,/g, ""));
           todayLastPrice = numberPrice;
           lowPrice = numLowPrice;
+          if (todayLastPrice < 1001) {
+            isCoinItem = true;
+            break;
+          }
+        }
+        if (i < 5) {
+          fiveLine += numberPrice; // 5일선
         }
         sum += numberPrice;
       }
+      // 동전주면 break
+      if (!isCoinItem) {
+        const eightLine = sum / 8; // 8일선
 
-      const fiveLine = sum / 5;
-
-      if (
-        todayLastPrice > fiveLine &&
-        (lowPrice >= fiveLine + 100 || lowPrice >= fiveLine - 100)
-      ) {
-        company.push({ name: name });
+        if (
+          lowPrice < fiveLine &&
+          lowPrice <= eightLine + 250 &&
+          lowPrice >= eightLine - 250
+        ) {
+          company.push({ name: name, code: code });
+        }
       }
     }
     await driver.quit();
